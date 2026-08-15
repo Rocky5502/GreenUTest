@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "updated": "2026-08-15",
   "policy": "Fetch exact pinned revisions by default. Override only for explicit exploratory work; re-freeze before confirmatory runs.",
   "sources": {
@@ -14,7 +14,11 @@
       "lite_git_blob_sha": "bd2831a6db7498f750a7ab3e27ed8a12398710ee",
       "lite_size_bytes": 427322,
       "license": "Apache-2.0",
-      "redistribution": "Do not mirror benchmark data in GreenUTest; fetch the pinned upstream. Keep reference tests evaluator-side."
+      "redistribution": "Do not mirror benchmark data in GreenUTest; fetch the pinned upstream. Keep reference tests evaluator-side.",
+      "plt_path_hint": "datasets/PLT.jsonl",
+      "plt_git_blob_sha": "5880c35e957d83e539527fbfef7002eedc458735",
+      "plt_size_bytes": 35748816,
+      "plt_role": "paired intentionally leaked diagnostic benchmark; keep its tests evaluator-side during generation"
     },
     "bugsinpy": {
       "repo": "https://github.com/soarsmu/BugsInPy.git",
@@ -27,14 +31,19 @@
       "default_branch": "main",
       "pinned_commit": "c9485dc1a31a90a0410c8393da90f65c8682aa24",
       "license": "MIT",
-      "license_note": "Re-check third-party task/repository licenses before execution or redistribution."
+      "license_note": "Re-check third-party task/repository licenses before execution or redistribution.",
+      "dataset_path_hint": "data/curated_mutations.jsonl",
+      "released_instances": 800,
+      "released_mutation_records": 3934
     },
     "testgeneval": {
       "repo": "https://github.com/facebookresearch/testgeneval.git",
       "default_branch": "main",
       "pinned_commit": "67ea3ff37643b3078413d6e4fadaae00ce8d9e5d",
-      "dataset": "kjain14/testgenevallite",
-      "license_note": "Upstream repository states majority code is CC-BY-NC; third-party files may differ. Optional robustness benchmark."
+      "license_note": "Upstream repository states majority code is CC-BY-NC; third-party files may differ. Optional robustness benchmark.",
+      "dataset_full": "kjain14/testgeneval",
+      "dataset_lite": "kjain14/testgenevallite",
+      "role": "core full benchmark for confirmatory RQ2; Lite is pilot/integration only"
     },
     "testexplora": {
       "repo": "https://github.com/microsoft/TestExplora.git",
@@ -42,7 +51,7 @@
       "pinned_commit": "11e6952261f58d3ceb9f4d2571e03aa35dad9523",
       "license": "MIT",
       "dataset_note": "Official repo expects a separate benchmark JSON path and does not vendor the benchmark data at repository root. Keep external and record exact dataset artifact hash.",
-      "role": "secondary proactive Fail-to-Pass validation"
+      "role": "core proactive Fail-to-Pass real-fault benchmark; local benchmark JSON must be hashed before freeze"
     }
   },
   "baseline_sources": {

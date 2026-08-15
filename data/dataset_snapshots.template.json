@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "freeze_status": "TEMPLATE_NOT_FROZEN",
+  "testgeneval_full": {
+    "dataset_id": "kjain14/testgeneval",
+    "snapshot_revision_or_fingerprint": "TBD_BEFORE_FREEZE",
+    "local_artifact_sha256": "TBD_IF_MATERIALIZED"
+  },
+  "testgeneval_lite": {
+    "dataset_id": "kjain14/testgenevallite",
+    "snapshot_revision_or_fingerprint": "TBD_PILOT",
+    "confirmatory": false
+  },
+  "testexplora": {
+    "dataset_path": "TBD_LOCAL_BENCHMARK_JSON",
+    "sha256": "TBD_BEFORE_FREEZE"
+  }
+}

@@ -1,327 +1,160 @@
-# GreenUTest framework design
+# GreenUTest confirmatory protocol
 
-## Design principle
+## 1. Design principle
 
-The diagram is intentionally a **decision system**, not a conventional left-to-right “LLM generates tests” pipeline. The visual distinction should make three scientific ideas obvious:
+GreenUTest is a **resource-allocation decision system**, not merely an LLM test generator. Evidence is acquired cheap-first; raw signals are calibrated into reliability risk; extra generation/verification is purchased only when its expected value-of-information exceeds the declared resource penalty.
 
-1. evidence is acquired **cheap-first**;
-2. uncertainty is **calibrated into reliability risk**, not reported as raw confidence;
-3. the policy can decline to purchase more evidence when the expected value-of-information is lower than its energy cost.
+## 2. Research questions and primary benchmark roles
 
-## Logical layers
+### RQ1 — uncertainty reliability
+Primary: ULT. Diagnostic: paired PLT.
 
-### Layer A — task and generation
-A benchmark adapter normalizes a software-testing task and feeds the cheapest eligible model tier.
+Question: how well do lexical (when observable), behavioral, execution, oracle and software-risk signals predict invalid, incorrect or low-value generated tests?
 
-### Layer B — evidence acquisition
-Cheap signals are acquired first: static code risk, lexical uncertainty when available, and first execution status. Conditional signals include behavioral disagreement, independent-oracle checks, or stronger/multi-sample evidence.
+Primary analyses include discrimination (AUROC/AUPRC), calibration (ECE/Brier), selective risk/coverage, and relationships with coverage/mutation/fault outcomes.
 
-### Layer C — risk and VoI
-A calibration/fusion model estimates a task/test reliability risk. Before an expensive signal is acquired, the VoI gate estimates whether the expected improvement in downstream action utility exceeds its energy penalty.
+### RQ2 — sustainable adaptive testing
+Primary: ULT + **full TestGenEval**.
 
-### Layer D — action routing
-The policy chooses a supported action: accept/execute, verify, repair, regenerate, escalate, or abstain.
+Question: can calibrated uncertainty-guided routing reduce directly measured local energy/latency or hosted-call resources while preserving test quality?
 
-### Layer E — evaluation and telemetry
-Testing effectiveness and direct energy are measured jointly. Raw task-level records preserve uncertainty evidence, action trace, test outcomes, and phase-attributed energy.
+Confirmatory structure: quality non-inferiority at reduced local energy plus quality comparison at matched resource budgets. TestGenEvalLite is pilot-only.
 
-## Figure source
+### RQ3 — fault-oriented reliability
+Primary: TestExplora + SWE-Mutation.
 
-`assets/greenutest_framework.svg` is a standalone vector figure designed for README/docs use and later export. Its visual hierarchy deliberately uses restrained academic colors, grouped modules, and explicit feedback arrows.
+TestExplora measures proactive Fail-to-Pass real-bug discovery and false validation. SWE-Mutation measures realistic mutant discrimination using benchmark-native Pass@1, VRR and RDR. BugsInPy is optional classical external validation.
 
+## 3. Model strata
 
----
+### Study A — controlled same-family routing
+Qwen2.5-Coder-1.5B → Qwen2.5-Coder-7B.
 
-# Dataset and benchmark protocol
+This is the cleanest causal model-allocation experiment because family/training style is partially controlled.
 
-## No benchmark mirroring
+### Study B — open-model scaling
+Add Qwen3-Coder-30B-A3B-Instruct and Qwen3-Coder-Next. This tests whether the routing advantage persists as escalation reaches modern sparse/MoE code models.
 
-The repository stores only adapters and source manifests. Raw benchmark content is fetched into the Git-ignored `external/` directory.
+### Study C — frontier provider generalization
+GPT-5.6 Sol, Claude Sonnet 5 and Gemini 3.6 Flash. These conditions test provider/family generalization; they are not used to make unsupported provider-energy claims.
 
-## ULT / UnLeakedTestBench
+### Optional appendix
+Mistral-7B-Instruct-v0.3 for cross-family robustness.
 
-Role: primary function-level generation and calibration benchmark.
+The machine-readable design is `configs/study_matrix.json`.
 
-Adapter expectations:
+## 4. Dataset integrity
 
-- retain upstream task IDs;
-- capture repository/source metadata where available;
-- never infer oracle correctness from “generated test passes” alone;
-- preserve the upstream benchmark's contamination controls;
-- run `ULT_Lite` first during integration before the full benchmark.
+### ULT / PLT
 
-## BugsInPy
+- exact upstream Git revision is pinned;
+- blob identities for ULT, ULT_Lite and PLT are recorded;
+- array-vs-JSONL encoding is auto-detected;
+- `test_list`, `tests`, `reference_tests`, `gold_tests` and equivalent evaluator fields never enter generator-visible task metadata/prompts/routing features;
+- the same firewall applies to PLT so the diagnostic measures ecosystem contamination, not deliberate prompt leakage.
 
-Role: real-fault detection and false-validation analysis.
+### TestGenEval
 
-For each bug we need a reproducible buggy/fixed pair. Environment/setup failure is a separate status from model/test failure.
+- use TestGenEvalLite to validate Docker/images/scoring;
+- full confirmatory RQ2 uses `kjain14/testgeneval` with the pinned harness;
+- hash/record the exact HF dataset snapshot or fingerprint before freeze.
 
-A candidate test can support fault detection when it distinguishes the buggy version from the fixed/reference version under the benchmark contract.
+### TestExplora
 
-## SWE-Mutation
+- main condition is non-hinted proactive discovery;
+- fix patches/hints are evaluator-side unless a separately named hinted ablation is predeclared;
+- distinguish environment/setup failure from model/test failure.
 
-Role: stress test of discriminative test-suite power using challenging mutants.
+### SWE-Mutation
 
-Do not silently treat its mutation concept as interchangeable with conventional first-order mutation. Preserve benchmark-specific labels and metrics in the raw records.
+- preserve benchmark-native semantics and released curated mutation set;
+- report Pass@1, VRR/RDR as defined by the benchmark;
+- do not silently label realistic agent-crafted mutants as conventional first-order mutation.
 
-## TestGenEvalLite
+## 5. Split policy
 
-Role: optional repository/file-level robustness extension.
+Every applicable dataset is divided into pilot, calibration-fit, policy-tuning and held-out-final partitions. Group by repository/project/PR family where metadata permit. Hash the held-out IDs before unblinding. Never use held-out outcomes to select models, thresholds, datasets, prompts, margins or budgets.
 
-It is deliberately optional because its Docker/image and upstream licensing requirements are heavier. Integrate only after the core function-level and real-fault experiments reproduce reliably.
+## 6. Uncertainty evidence
 
-## Split policy
+Cheap-first evidence may include:
 
-The same stable task IDs must be used across model/policy comparisons. Split into:
+- self-hosted generated-token NLL / entropy-derived lexical signal;
+- static complexity/change risk;
+- first execution status.
 
-- pilot;
-- calibration-fit;
-- policy-tuning;
-- held-out final.
+Conditional evidence may include:
 
-Group by repository/project where metadata permit. The held-out task list is hashed before unblinding.
+- multi-sample behavioral disagreement;
+- execution disagreement;
+- independent-oracle/specification disagreement;
+- stronger-model verification;
+- fault/mutant-facing verification where methodologically permitted.
 
+Hosted providers are not assigned synthetic NLL/logprob values. Cross-provider analyses use signals actually observable across providers.
 
----
+## 7. Calibration and risk
 
-# Baseline matrix
+Fit calibration/fusion on `calibration_fit` only (candidate methods may include Platt/logistic, isotonic, or other predeclared calibrators). Evaluate ECE, Brier, AUROC/AUPRC and selective risk. Freeze the selected calibration procedure before held-out execution.
 
-GreenUTest should be compared against **compute allocation strategies**, not merely different model names.
+## 8. VoI and routing
 
-| Baseline | Purpose | What must be matched/controlled |
-|---|---|---|
-| small model only | efficiency floor | task/prompt/seed |
-| strong model only | quality-first upper compute reference | task/prompt/seed |
-| fixed self-consistency | fixed expensive uncertainty/computation | sample count |
-| random routing | tests whether learned/risk routing beats arbitrary escalation | match escalation rate |
-| raw-confidence routing | tests calibration contribution | same generator/action set |
-| static complexity routing | SE heuristic control | same escalation budget |
-| STARouter-style | internal/state-feature model routing concept | clearly label clean-room implementation |
-| fixed agentic feedback | fixed rounds of execution/coverage feedback | same max rounds/tool access |
-| specification-first | independent oracle before implementation-coupled validation | same oracle source availability |
-| traditional non-LLM | classical test generation control | benchmark compatibility/time budget |
-| GreenUTest | calibrated risk + VoI + energy-aware action routing | full method |
+Before buying an expensive signal/action, compare expected downstream utility improvement with its resource penalty. The policy may accept/execute, verify, repair, regenerate, escalate or abstain. All thresholds and VoI coefficients are tuned only on `policy_tuning` then frozen.
 
-## GreenUTest ablations
+## 9. Baselines
 
-At minimum:
+Required controls: small-only, strong-only, fixed self-consistency, matched random routing, raw-confidence routing where comparable, static-complexity routing, STARouter-style clean-room state routing, SWE-Router-style clean-room temporal routing, fixed agentic feedback, specification-first independent oracle, traditional Pynguin-style testing where compatible, and GreenUTest ablations.
 
-- no calibration;
-- no VoI gate;
-- no oracle uncertainty;
-- no behavioral uncertainty;
-- no independent-oracle check;
-- no abstention;
-- no energy penalty.
+Unsupported combinations are `N/A`. Every call/tool/action is charged to the requesting policy.
 
-## Fairness rules
+## 10. Resource accounting
 
-1. Baselines must receive the same task context unless the original method requires a clearly documented difference.
-2. Match seeds/task ordering when stochastic execution permits.
-3. Random-routing comparisons must match GreenUTest's observed escalation rate or matched energy budget, not an arbitrary rate chosen after results are seen.
-4. API models are excluded from direct provider-side energy comparisons unless verifiable provider telemetry is available.
-5. Report unsupported baseline/benchmark combinations as **N/A**, not zero.
+### Self-hosted/local
 
-
----
-
-# Direct energy measurement protocol
-
-## Primary measurement
-
-For local NVIDIA GPU inference, sample instantaneous board power through NVML with monotonic timestamps and numerically integrate energy with the trapezoidal rule:
+Sample NVIDIA board power through NVML with monotonic timestamps and integrate:
 
 `E_joules = Σ 0.5 * (P_i + P_{i+1}) * (t_{i+1} - t_i)`
 
-`Wh = J / 3600`
+Primary: raw directly measured Joules/Wh. Sensitivity: idle-adjusted GPU energy when stable. Optional: wall-meter cross-check.
 
-## Pilot requirements
+Phase tags: model load/warmup, prefill, decoding, uncertainty acquisition, execution, verification, repair/regeneration, mutation/coverage evaluation.
 
-- validate a stable sampling interval; target 100 ms or faster only when measurement overhead remains negligible;
-- confirm timestamps are monotonic;
-- confirm run-level integrated energy approximately equals the sum of phase-level energy;
-- record idle power before/after blocks;
-- repeat identical tasks to estimate measurement variation;
-- interleave/randomize policy order within compatible blocks;
-- separate model-load/warm-up from task-time inference.
+### Hosted APIs
 
-## Phase tags
+Archive provider usage tokens, latency and call count. Provider-side energy is unknown unless verifiable telemetry becomes available. Do not convert token counts or API price into Joules.
 
-- `model_load_warmup`
-- `prefill`
-- `decoding`
-- `uncertainty_acquisition`
-- `test_execution`
-- `verification`
-- `repair_regeneration`
-- `mutation_coverage_evaluation`
+Therefore direct energy-efficiency claims are made within observable self-hosted conditions; hosted conditions primarily test quality/generalization and call/token allocation.
 
-## Reporting
+## 11. Model telemetry
 
-Primary: raw directly measured GPU Wh/J.
+Self-hosted generations archive NLL/raw confidence, prompt hash/token counts, generated tokens, seed/sampling configuration, requested and resolved model/tokenizer revisions.
 
-Sensitivity: idle-adjusted GPU energy when the idle estimate is stable enough to justify subtraction.
+Hosted generations archive provider/model IDs, response identifiers/versions where exposed, token usage and latency. Current provider sampling constraints are respected rather than forcing unsupported temperature/top-p controls.
 
-Optional: physical wall-meter cross-check for whole-system energy.
+## 12. Statistics
 
-Do not invent API-provider energy estimates.
+Use paired/task-aligned analyses where possible, 95% confidence intervals, effect sizes, and predeclared multiplicity correction. For RQ2 report non-inferiority and matched-resource comparisons. For mutation/fault endpoints use benchmark-appropriate paired/bootstrap analyses. Preserve confirmatory vs exploratory labeling.
 
+## 13. Reproducibility contract
 
----
+A publication-facing run must recover:
 
-# Reproducibility contract
+- GreenUTest commit SHA and frozen analysis-plan hash;
+- benchmark revisions and external dataset hashes/fingerprints;
+- model IDs/revisions/tokenizer revisions/quantization or canonical provider IDs;
+- prompts and split hashes;
+- seeds/sampling/provider configuration;
+- machine/OS/Python/CUDA/driver/framework versions for self-hosted runs;
+- direct energy sampling configuration or hosted usage metadata;
+- action traces, generated tests, outcomes and infrastructure failures;
+- evaluation tool/container versions.
 
-A full run is not publication-ready unless the following can be recovered:
+No paper-facing number is typed manually; tables/figures must be generated from archived run logs by versioned analysis code.
 
-- repository commit SHA;
-- analysis-plan hash;
-- partition/task-list hash;
-- benchmark URL + pinned revision + selected file checksum;
-- model ID + revision + tokenizer revision + quantization;
-- prompt/template revision;
-- random seed;
-- operating system and Python version;
-- GPU/driver/CUDA/PyTorch/Transformers versions;
-- dedicated VRAM reported by the runtime;
-- energy sampling backend and interval;
-- policy config hash;
-- raw task-level runlog;
-- generated test content hash (and archived content when license permits);
-- evaluation tool versions;
-- explicit environment/setup failures.
+## 14. Results policy
 
-## Data-to-paper rule
+Pilot data may guide predeclared design freezing but never enter confirmatory tables. After held-out unblinding, do not change the frozen analysis. Report N/A combinations, failures, confidence intervals and effect sizes transparently.
 
-No scientific number should be manually typed into a paper table. Paper-facing tables/plots must be generated from archived task-level records by versioned code.
+## 15. Security
 
-
----
-
-# Windows local setup
-
-Recommended path: native Python + PowerShell for local-model inference; WSL2/Docker may be preferable for Linux-native benchmark environments such as BugsInPy/TestGenEval.
-
-## Phase 0 — no GPU use
-
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -e ".[dev]"
-python -m greenutest doctor
-python -m greenutest dry-run --output artifacts/dry-run
-python -m unittest discover -s tests -v
-```
-
-## Phase 1 — telemetry only
-
-```powershell
-pip install -e ".[dev,energy]"
-python -m greenutest doctor --require-nvml
-python scripts/sample_nvml.py --seconds 5
-```
-
-Do this before installing/downloading models. Confirm the GPU name and dedicated VRAM from `nvidia-smi`/NVML.
-
-## Phase 2 — local model stack
-
-```powershell
-pip install -e ".[dev,energy,analysis,local-hf]"
-python -m greenutest doctor --require-nvml
-```
-
-Freeze exact Torch/CUDA compatibility only after checking the installed NVIDIA driver. Do not blindly copy a CUDA wheel command from another machine.
-
-## Phase 3 — benchmark environments
-
-Use benchmark-provided Docker/Conda environments where practical. Keep benchmark checkouts under `external/`, never in the package source tree.
-
-
----
-
-# Experiment protocol
-
-## Stage A — harness verification
-
-Pass all unit tests and the toy dry-run. No model downloads.
-
-## Stage B — energy instrumentation pilot
-
-Validate NVML sampling, phase attribution, idle baseline, and repeated-run variance using a tiny deterministic workload.
-
-## Stage C — benchmark-adapter pilot
-
-Integrate `ULT_Lite`, then a very small reproducible BugsInPy subset. Audit TestExplora as a secondary proactive Fail-to-Pass benchmark before enabling it. Verify task identity, environment status, generated-test archive, coverage/mutation reconciliation, and false-validation labeling logic.
-
-## Stage D — model pilot
-
-Run a small excluded pilot across the candidate local model tiers. Freeze:
-
-- model revisions/quantization;
-- prompt version;
-- calibration candidates;
-- uncertainty acquisition costs;
-- candidate non-inferiority margin;
-- matched energy budgets;
-- VoI energy coefficient/threshold.
-
-## Stage E — freeze
-
-Create `configs/frozen/confirmatory.lock.json`, hash it, freeze held-out task IDs, and record the code commit.
-
-## Stage F — held-out run
-
-No threshold changes. Failures caused by infrastructure are reported separately and handled according to the predeclared missingness/retry policy.
-
-
----
-
-# Results policy
-
-Before held-out unblinding:
-
-- plots/tables may use toy data only and must be labeled toy/synthetic;
-- pilot data may guide instrumentation and frozen design choices but must never enter confirmatory tables;
-- no cherry-picking model tiers, thresholds, datasets, or budgets based on final outcomes.
-
-After held-out unblinding:
-
-- preserve the frozen analysis plan;
-- generate result tables from task-level logs;
-- keep confirmatory and exploratory results separate;
-- report failures and N/A combinations transparently;
-- report effect sizes and confidence intervals beside significance tests.
-
----
-
-## Pre-scale pilot gate
-
-The full GPU matrix must not begin until the following are true: environment/GPU identity is archived; NVML power integration passes sanity checks; benchmark revisions and split hashes are frozen; model/tokenizer revisions and prompt hash are recorded; labels separate execution validity, oracle validity, false validation and fault detection; partitions are group-disjoint where possible; retry behavior never silently erases model failures; and confirmatory endpoints/budgets are frozen before held-out execution.
-
-Stop scaling on unexplained power-meter discontinuity, partition leakage, revision mismatch, hidden retry behavior, or any task result that cannot be reconstructed from archived metadata.
-
-## Baseline provenance rule
-
-GreenUTest distinguishes direct controls, clean-room *style* baselines, and optional upstream reproductions. `STARouter-style` is a clean-room state-routing control, not a source-code reproduction claim. `fixed-agentic-feedback` is a fixed-depth execution/coverage-feedback control, not copied TestForge source. Any upstream implementation must be separately pinned and license-reviewed. Traditional non-LLM generation is exposed as an adapter and should use a pinned compatible tool such as Pynguin only where benchmark semantics permit.
-
-
-## Dataset integrity and leakage firewall
-
-- ULT reference/evaluator tests must never enter generation prompts, retrieval corpora, task metadata passed to model backends, or routing features.
-- TestExplora defect-fix patches/hints are evaluator-side unless a specifically named hinted condition is being studied; the main GreenUTest condition uses the benchmark's non-leaking setup.
-- Any dataset artifact not fully determined by a Git commit (for example an externally downloaded JSON/Hugging Face snapshot) must be hashed and recorded in the frozen run manifest.
-- Benchmark repositories are checked out at the commits in `data/upstreams.json` by default. Floating HEAD is forbidden for confirmatory execution.
-
-## Model-pair design
-
-The principal local routing pair should, if the excluded hardware pilot confirms feasibility, use Qwen2.5-Coder-1.5B-Instruct as the cheap tier and Qwen2.5-Coder-7B-Instruct as the stronger tier. This same-family comparison reduces architecture/training-family confounding while creating a meaningful compute gap. Mistral-7B-Instruct-v0.3 is retained as a cross-family robustness condition rather than the default cheap tier. Exact revisions and quantization are frozen after the pilot.
-
-## Routing controls
-
-In addition to STARouter-style state routing, include a clean-room temporal routing control that buys a fixed amount of cheap exploration before deciding whether to escalate. This is inspired by recent trajectory/value-routing work but is not presented as an upstream reproduction. All exploratory turns are charged to its energy/time budget.
-
-## Lexical uncertainty acquisition contract
-
-For local Hugging Face models, GreenUTest records mean generated-token negative log-likelihood directly from generation logits. The raw confidence control is the geometric mean generated-token probability, `exp(-mean_NLL)`, and is explicitly treated as uncalibrated. Prompt SHA-256, prompt/generated token counts, requested model revision, and resolved model/tokenizer Hub commit hashes are recorded with each candidate. The excluded pilot may resolve a floating model snapshot; confirmatory execution refuses unresolved model revisions.
-
-Sampling parameters are part of the frozen configuration. Multi-sample/semantic uncertainty must use distinct predeclared seeds and charge every generation to the corresponding policy.
+Generated tests and benchmark repositories are untrusted code. Use isolated containers/environments with network restrictions where feasible, resource/time limits and explicit workspaces. Credentials must never be passed into generated-test sandboxes or committed to logs.

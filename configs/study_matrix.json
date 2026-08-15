@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "updated": "2026-08-15",
+  "core_models": [
+    "qwen25coder15b",
+    "qwen25coder7b",
+    "qwen3coder30ba3b",
+    "qwen3codernext",
+    "gpt56sol",
+    "claudesonnet5",
+    "gemini36flash"
+  ],
+  "optional_models": [
+    "mistral7b"
+  ],
+  "core_benchmarks": [
+    "ult",
+    "testgeneval",
+    "testexplora",
+    "swe_mutation"
+  ],
+  "diagnostic_or_optional_benchmarks": [
+    "plt",
+    "testgeneval_lite",
+    "bugsinpy"
+  ],
+  "studies": {
+    "A_controlled_same_family_scaling": {
+      "models": [
+        "qwen25coder15b",
+        "qwen25coder7b"
+      ],
+      "benchmarks": [
+        "ult",
+        "testgeneval"
+      ],
+      "purpose": "clean test of uncertainty-guided escalation with reduced model-family confounding",
+      "resource_reporting": "direct_NVML_energy_latency_tokens"
+    },
+    "B_open_model_scaling": {
+      "models": [
+        "qwen25coder15b",
+        "qwen25coder7b",
+        "qwen3coder30ba3b",
+        "qwen3codernext"
+      ],
+      "benchmarks": [
+        "ult",
+        "testgeneval",
+        "swe_mutation"
+      ],
+      "purpose": "test routing and sustainability across dense/sparse open code-model scales",
+      "resource_reporting": "direct_NVML_energy_latency_tokens_when_self_hosted"
+    },
+    "C_frontier_provider_generalization": {
+      "models": [
+        "gpt56sol",
+        "claudesonnet5",
+        "gemini36flash"
+      ],
+      "reference_models": [
+        "qwen25coder15b",
+        "qwen25coder7b"
+      ],
+      "benchmarks": [
+        "ult",
+        "testgeneval",
+        "testexplora"
+      ],
+      "purpose": "test whether uncertainty-guided allocation generalizes across frontier providers",
+      "resource_reporting": "provider_usage_tokens_latency_call_count_no_unverified_energy_estimate"
+    },
+    "D_contamination_diagnostic": {
+      "models": [
+        "qwen25coder15b",
+        "qwen25coder7b",
+        "qwen3coder30ba3b",
+        "gpt56sol",
+        "claudesonnet5",
+        "gemini36flash"
+      ],
+      "benchmark_pair": [
+        "ult",
+        "plt"
+      ],
+      "purpose": "measure confidence/calibration/performance inflation under intentionally leaked counterpart tasks",
+      "confirmatory_status": "diagnostic_secondary_not_primary_endpoint"
+    },
+    "E_real_fault_and_discrimination": {
+      "models": [
+        "qwen25coder7b",
+        "qwen3coder30ba3b",
+        "qwen3codernext",
+        "gpt56sol",
+        "claudesonnet5",
+        "gemini36flash"
+      ],
+      "benchmarks": [
+        "testexplora",
+        "swe_mutation"
+      ],
+      "purpose": "measure Fail-to-Pass discovery, false validation, VRR/RDR and discriminative power"
+    }
+  },
+  "policy_suite": [
+    "small_only",
+    "strong_only",
+    "fixed_self_consistency",
+    "random_routing",
+    "raw_confidence",
+    "static_complexity",
+    "starouter_style",
+    "swe_router_style",
+    "fixed_agentic_feedback",
+    "spec_first",
+    "traditional",
+    "greenutest"
+  ],
+  "guardrails": {
+    "heldout_selection_after_results": false,
+    "api_provider_energy_estimation": false,
+    "unsupported_baseline_scores_as_zero": false,
+    "reference_tests_in_generator_context": false
+  }
+}

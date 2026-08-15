@@ -2,47 +2,50 @@
 
 **Uncertainty-guided, energy-adaptive LLM software testing.**
 
-GreenUTest is a reproducible research harness for studying a simple question:
+GreenUTest is a reproducible research harness for one central question:
 
 > **When is extra AI computation actually worth spending on a generated software test?**
 
-Instead of applying the same generation, verification, repair, and escalation budget to every testing task, GreenUTest acquires uncertainty evidence in stages, calibrates the risk that a generated test is unreliable or low-value, and routes each task through the least expensive action that is justified by expected testing value.
+Rather than applying the same generation, verification, repair and escalation budget to every task, GreenUTest acquires uncertainty evidence cheap-first, calibrates reliability risk, and buys additional computation only when its expected testing value justifies the resource cost.
 
 This repository contains **experiment code only**. The manuscript is intentionally not stored here.
 
-## Research scope
+## Scientific scope
 
-GreenUTest separates test quality into distinct observable outcomes rather than treating a passing test as automatically correct:
+GreenUTest does not treat “the generated test passed” as equivalent to “the generated test is correct.” It separates:
 
 - syntax validity;
 - execution validity;
 - oracle validity;
 - fault triggering;
-- fault detection / mutant killing;
+- real-fault detection / Fail-to-Pass behavior;
+- realistic mutant killing / discriminative power;
 - false validation;
-- incremental test value.
+- coverage and mutation quality;
+- incremental testing value;
+- directly observed local energy and hosted-provider resource usage.
 
-The core policy can choose among:
+The policy action space is:
 
 `ACCEPT -> EXECUTE -> VERIFY -> REPAIR -> REGENERATE -> ESCALATE -> ABSTAIN`
 
-An optional **value-of-information (VoI) gate** decides whether buying another uncertainty signal is worth its expected energy cost before that signal is acquired.
+An optional **value-of-information (VoI)** gate decides whether another uncertainty signal is worth acquiring before paying its compute/energy cost.
 
 ## Repository status
 
-**Stage: pre-experiment infrastructure.** No paper results are committed. No result in this repository should be interpreted as a scientific finding until it is generated from the frozen held-out protocol.
+**Stage: pre-experiment infrastructure / preflight.** No paper result is committed here. Pilot rows are explicitly non-scientific and excluded from confirmatory tables.
 
-The code ships with a CPU-only deterministic toy benchmark and fake models so the full orchestration path can be tested before downloading models or benchmarks.
+The package includes a deterministic CPU-only toy benchmark, fake models, invariant tests, local Hugging Face backends, lazy hosted-provider backends, dataset manifests, and a generation-only ULT/PLT preflight bridge.
 
 ## Framework
 
 ```mermaid
 flowchart LR
-    A[Software-under-test / task] --> B[Cheap generator]
+    A[Software-under-test / task] --> B[Cheapest eligible generator]
     B --> C[Candidate test]
-    C --> D[Cheap evidence\nstatic risk + lexical uncertainty + first execution]
+    C --> D[Cheap evidence\nstatic risk + lexical signal if observable + first execution]
     D --> E[Calibrated reliability risk]
-    E --> F{VoI > energy cost?}
+    E --> F{VoI exceeds resource penalty?}
     F -- yes --> G[Conditional evidence\nbehavioral disagreement / oracle check / stronger model]
     G --> E
     F -- no --> H{Risk + budget policy}
@@ -54,58 +57,91 @@ flowchart LR
     J --> M
     K --> M
     L --> M
-    M --> N[Validity • mutation • real faults • coverage • joules]
-    N --> O[Task-level run log]
+    M --> N[Validity • coverage • mutation • real faults • resources]
+    N --> O[Immutable task-level run log]
 ```
 
-A publication-style vector framework diagram is available at [`assets/greenutest_framework.svg`](assets/greenutest_framework.svg), with design notes in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+A standalone academic vector diagram is available at [`assets/greenutest_framework.svg`](assets/greenutest_framework.svg).
 
-## Experiment design
+## Locked model plan
 
-The intended confirmatory pipeline uses four partitions:
+GreenUTest now uses **seven core models** across three scientific strata.
 
-1. **pilot** — instrumentation/debugging only;
-2. **calibration-fit** — uncertainty calibration/fusion;
-3. **policy-tuning** — routing, VoI thresholds, energy budgets;
-4. **held-out final** — untouched until the analysis plan is frozen.
-
-GreenUTest never tunes thresholds or non-inferiority margins on held-out outcomes.
-
-### Planned benchmark roles
-
-| Benchmark | Role | Redistribution policy |
+| Study role | Model key | Model |
 |---|---|---|
-| ULT / UnLeakedTestBench | Primary contamination-conscious function-level test generation | Fetch from upstream; do not mirror hidden/ground-truth tests |
-| BugsInPy | Real buggy/fixed pairs and false-validation analysis | Clone pinned upstream; do not vendor projects |
-| TestExplora | Proactive repository-level Fail-to-Pass validation | Pinned harness + external benchmark JSON; hash locally |
-| SWE-Mutation | Discriminative test-suite stress test | Fetch/clone upstream; respect upstream license |
-| TestGenEvalLite | Repository/file-level robustness extension | External optional benchmark; upstream licensing applies |
-| Toy benchmark | CI/smoke testing only | Included here |
+| Cheap controlled tier | `qwen25coder15b` | Qwen2.5-Coder-1.5B-Instruct |
+| Stronger same-family tier | `qwen25coder7b` | Qwen2.5-Coder-7B-Instruct |
+| Strong open MoE tier | `qwen3coder30ba3b` | Qwen3-Coder-30B-A3B-Instruct |
+| Frontier open MoE tier | `qwen3codernext` | Qwen3-Coder-Next |
+| Frontier hosted | `gpt56sol` | GPT-5.6 Sol (`gpt-5.6-sol`) |
+| Frontier hosted | `claudesonnet5` | Claude Sonnet 5 (`claude-sonnet-5`) |
+| Frontier hosted | `gemini36flash` | Gemini 3.6 Flash (`gemini-3.6-flash`) |
 
-See [`docs/PROTOCOL.md`](docs/PROTOCOL.md), [`data/DATASETS.md`](data/DATASETS.md), and [`data/upstreams.json`](data/upstreams.json).
+Optional appendix robustness: `mistral7b` / Mistral-7B-Instruct-v0.3.
 
-## Baselines
+The controlled causal comparison remains **Qwen2.5-Coder 1.5B → 7B** because the family is held fixed. Qwen3 tiers test open-model scaling; GPT/Claude/Gemini test cross-provider generalization. See [`data/MODELS.md`](data/MODELS.md) and [`configs/study_matrix.json`](configs/study_matrix.json).
 
-The harness includes policy implementations/configuration for:
+### Model-resource rule
 
-- small/local model only;
-- strong model only;
+Self-hosted models can support direct GPU-energy claims via NVML. Hosted API models log provider-reported tokens, latency and call count, but GreenUTest **does not fabricate provider-side Joules**. Hosted conditions therefore support quality/generalization/resource-proxy analyses, not direct provider-energy equivalence claims.
+
+## Locked dataset plan
+
+The final main paper uses **four core benchmarks**:
+
+| Benchmark | Primary role |
+|---|---|
+| **ULT / UnLeakedTestBench** | RQ1 uncertainty/calibration + function-level RQ2 efficiency |
+| **TestGenEval (full)** | RQ2 realistic coverage/mutation/test-effectiveness evaluation |
+| **TestExplora** | RQ3 proactive real-bug Fail-to-Pass discovery and false-validation analysis |
+| **SWE-Mutation** | RQ3 realistic-mutant discrimination, VRR/RDR and suite reliability |
+
+Secondary/diagnostic datasets:
+
+- **PLT / PreLeakedTestbench** — paired contamination/memorization-vs-reasoning diagnostic with ULT;
+- **TestGenEvalLite** — pilot/integration only; not a substitute for full confirmatory TestGenEval;
+- **BugsInPy** — optional classical external-validity extension;
+- Toy — CI/smoke only.
+
+See [`data/DATASETS.md`](data/DATASETS.md) and [`data/upstreams.json`](data/upstreams.json).
+
+## Research-question mapping
+
+1. **RQ1 — Uncertainty reliability:** ULT primary; PLT diagnostic. Evaluate error/low-value-test discrimination, calibration and selective risk.
+2. **RQ2 — Sustainable adaptive testing:** ULT + full TestGenEval. Compare quality at matched resource budgets and resource reduction under a predeclared quality non-inferiority margin.
+3. **RQ3 — Fault-oriented reliability:** TestExplora + SWE-Mutation. Measure Fail-to-Pass discovery, false validation, VRR/RDR and realistic mutant detection.
+
+## Experimental partitions
+
+Every confirmatory benchmark is separated into:
+
+1. `pilot` — instrumentation/debug only;
+2. `calibration_fit` — uncertainty calibration/fusion;
+3. `policy_tuning` — routing/VoI/budget tuning;
+4. `heldout_final` — untouched until the analysis plan is frozen.
+
+Where repository metadata exist, splitting is grouped by repository/project rather than naïvely mixing closely related tasks.
+
+## Baseline suite
+
+The configured controls isolate model strength, extra sampling, routing information, agentic feedback, oracle independence and classical test generation:
+
+- small-model only;
+- strong-model only;
 - fixed self-consistency;
-- random routing at a matched escalation rate;
-- raw-confidence routing;
+- matched random routing;
+- raw-confidence routing where a comparable confidence signal actually exists;
 - static complexity/risk routing;
-- STARouter-style state routing adapter;
-- SWE-Router-style temporal/exploration routing control;
-- fixed-depth execution/coverage-feedback refinement adapter;
-- specification-first / independent-oracle verification;
-- traditional non-LLM test generation adapter;
-- GreenUTest full policy and ablations.
+- STARouter-style clean-room state routing;
+- SWE-Router-style clean-room temporal routing;
+- fixed execution/coverage-feedback refinement;
+- specification-first independent oracle;
+- Pynguin-style traditional non-LLM testing where compatible;
+- GreenUTest + ablations.
 
-“Style” adapters are **clean-room experimental interfaces**, not copied implementations of the original systems. If an upstream implementation is later integrated, it must be pinned and documented separately.
+See [`data/BASELINES.md`](data/BASELINES.md).
 
-See [`docs/PROTOCOL.md`](docs/PROTOCOL.md) and [`data/BASELINES.md`](data/BASELINES.md).
-
-## Quick start — zero GPU burn
+## Zero-GPU start
 
 ### Windows PowerShell
 
@@ -115,14 +151,9 @@ py -3.11 -m venv .venv
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
 python -m greenutest doctor
-python -m greenutest dry-run --output artifacts/dry-run
 python -m unittest discover -s tests -v
-```
-
-Or:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/bootstrap.ps1
+python -m greenutest dry-run --output artifacts/dry-run
+python scripts/verify_runlog.py artifacts/dry-run/runlog.jsonl
 ```
 
 ### Linux / WSL
@@ -133,141 +164,147 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -e '.[dev]'
 python -m greenutest doctor
-python -m greenutest dry-run --output artifacts/dry-run
 python -m unittest discover -s tests -v
+python -m greenutest dry-run --output artifacts/dry-run
 ```
 
-## GPU/local-model setup
+## Inspect the locked plan without loading models
 
-Do **not** install the heavy model stack until the dry-run passes.
-
-```powershell
-pip install -e ".[dev,analysis,energy,local-hf]"
-python -m greenutest doctor --require-nvml
+```bash
+python -m greenutest inspect-model-plan --config configs/experiment.json
+python -m greenutest inspect-manifest
 ```
 
-Recommended first local-model experiment profile:
-
-- **cheap tier:** `Qwen/Qwen2.5-Coder-1.5B-Instruct`;
-- **strong local tier:** `Qwen/Qwen2.5-Coder-7B-Instruct` (same family, cleaner capability/energy comparison);
-- **cross-family robustness tier:** `mistralai/Mistral-7B-Instruct-v0.3`;
-- exact model/tokenizer revisions and quantization are frozen after the excluded hardware pilot.
-
-Model IDs are configuration defaults, **not scientific commitments** until `configs/frozen/` is generated.
-
-The local Transformers backend records generated-token mean NLL, an uncalibrated geometric-mean token-probability confidence signal, prompt/token counts, prompt hash, and resolved model/tokenizer revisions. Confirmatory model construction rejects unresolved revisions. See [`docs/MODEL_TELEMETRY.md`](docs/MODEL_TELEMETRY.md).
-
-## Fetch benchmark sources
-
-Dry-run first. Then inspect the manifest and fetch only the benchmark you need:
+## Fetch core benchmark repositories
 
 ```powershell
 python scripts/fetch_benchmarks.py --list
 python scripts/fetch_benchmarks.py --name ult --dest external
-python scripts/fetch_benchmarks.py --name bugsinpy --dest external
+python scripts/fetch_benchmarks.py --name testgeneval --dest external
 python scripts/fetch_benchmarks.py --name testexplora --dest external
+python scripts/fetch_benchmarks.py --name swe_mutation --dest external
+python scripts/verify_upstream_checkouts.py --external external
 ```
 
-The fetcher checks out exact pinned revisions by default. Large datasets, cloned projects, model weights, benchmark caches, generated tests, and run outputs are ignored by Git.
+The ULT verifier checks the pinned Git revision plus blob identities for **ULT, ULT_Lite and PLT**. Non-Git dataset artifacts such as Hugging Face/TestExplora JSON snapshots must be hashed locally before the freeze.
+
+## Local/self-hosted model preflight
+
+Do not install the heavy model stack until zero-GPU checks pass.
+
+```powershell
+pip install -e ".[dev,analysis,energy,local-hf]"
+python -m greenutest doctor --require-nvml
+python scripts/sample_nvml.py --seconds 5
+python -m greenutest model-smoke --model qwen25coder15b
+```
+
+Then run the excluded real-data bridge:
+
+```powershell
+python -m greenutest ult-generation-pilot `
+  --dataset external/UnLeakedTestBench/datasets/ULT_Lite.jsonl `
+  --benchmark ult `
+  --model qwen25coder15b `
+  --max-tasks 4 `
+  --measure-energy
+```
+
+For the PLT contamination diagnostic preflight, change the dataset to `PLT.jsonl` and pass `--benchmark plt`. Reference tests remain evaluator-side.
+
+## Hosted API preflight
+
+```powershell
+pip install -e ".[dev,remote-api]"
+python -m greenutest api-smoke --model gpt56sol
+python -m greenutest api-smoke --model claudesonnet5
+python -m greenutest api-smoke --model gemini36flash
+```
+
+Credentials are read by the respective SDK/provider environment. Keys are never stored in repository configs or run logs. API smoke tests are exploratory and do not estimate provider energy.
 
 ## Run architecture
 
 ```text
 TaskAdapter
-   -> ModelBackend
-   -> CandidateTest
+   -> ModelBackend (local/self-hosted or hosted API)
+   -> CandidateTest + provenance/resource metadata
    -> Evidence acquisition
    -> Risk calibration
    -> VoI gate
    -> Routing policy
-   -> Test execution / verification / repair / escalation
-   -> Fault-oriented evaluation
-   -> Energy accounting
+   -> execution / verification / repair / escalation
+   -> fault-oriented evaluation
+   -> resource accounting
    -> immutable task-level JSONL record
 ```
 
-Every task-level record includes experiment identifiers, benchmark/task identity, model/prompt/seed metadata, action trace, uncertainty evidence, test outcomes, and energy telemetry. The machine-readable contract is [`data/runlog.schema.json`](data/runlog.schema.json).
+## Uncertainty contract
 
-## Commands
+For self-hosted Hugging Face models GreenUTest records generated-token mean NLL from logits and defines raw token confidence as `exp(-mean_NLL)`. This is **uncalibrated** until the calibration-fit stage.
 
-```bash
-python -m greenutest doctor
-python -m greenutest dry-run --output artifacts/dry-run
-python -m greenutest inspect-manifest
-python -m greenutest inspect-model-plan --config configs/experiment.json
-# After telemetry checks only; this loads one model and may use the GPU:
-python -m greenutest model-smoke --config configs/experiment.json --model qwen25coder15b
-python scripts/freeze_analysis_plan.py --input configs/experiment.json --output configs/confirmatory.lock.json
-python scripts/verify_runlog.py artifacts/dry-run/runlog.jsonl
-python scripts/snapshot_environment.py --output artifacts/environment.json
-```
+For hosted providers, GreenUTest does not invent logprobs that are not exposed consistently. Cross-provider uncertainty therefore relies on observable signals such as:
 
-## Energy protocol
+- repeated-generation behavioral disagreement;
+- execution disagreement;
+- independent-oracle disagreement;
+- static software risk;
+- verification/fault outcomes.
 
-Primary quantity: **direct Joules / Wh**, sampled from NVIDIA NVML where available and integrated from timestamped power samples using the trapezoidal rule.
+## Energy and resource protocol
 
-We distinguish:
+For self-hosted NVIDIA inference, instantaneous board power is sampled through NVML and integrated using the trapezoidal rule. Report raw Joules/Wh primarily; idle-adjusted values are sensitivity analyses.
 
-- model load/warm-up;
-- prefill;
-- decoding;
-- uncertainty acquisition;
-- test execution;
-- verification;
-- repair/regeneration;
-- mutation/coverage evaluation.
+Phase tags include model load/warmup, prefill, decoding, uncertainty acquisition, execution, verification, repair/regeneration and mutation/coverage evaluation.
 
-Raw GPU energy is the primary directly observed GPU measure. Idle-adjusted energy is a sensitivity analysis. API-provider energy is not guessed when provider telemetry is unavailable.
-
-See [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+For hosted APIs report input/output tokens, latency and call count. **Do not turn API token counts into invented Joules.**
 
 ## Scientific guardrails
 
-- No held-out final result may be used to set a threshold, model tier, energy budget, or non-inferiority margin.
-- Pilot rows are excluded from confirmatory tables.
-- A “passing” generated test is not automatically labeled oracle-valid.
-- Dataset/setup failures are tracked separately from model failures.
-- Every paper-facing number must be generated from archived task-level logs by a versioned analysis script.
-- Raw benchmark data, model weights, API keys, paper source, and unreleased results are not committed.
+- No held-out result may select models, thresholds, datasets, margins or budgets.
+- Pilot rows never enter confirmatory paper tables.
+- A passing test is not automatically oracle-valid.
+- ULT/PLT reference tests and TestExplora fix hints are evaluator-side in the main condition.
+- Infrastructure failures remain distinct from model/test failures.
+- Unsupported baseline/benchmark combinations are `N/A`, never zero.
+- Every scientific table/plot must be regenerated from archived task-level logs by versioned analysis code.
+- Raw benchmark data, model weights, credentials, manuscript source and unreleased results are not committed.
 
 ## Directory map
 
 ```text
-assets/                 publication-style framework SVG
-configs/                experiment, model, policy, prompt and retry controls
-data/                   upstream manifest + run-log schema (no mirrored corpora)
-docs/                   consolidated protocol and scientific guardrails
-scripts/                bootstrap, fetch, freeze, split, snapshot and validation helpers
-src/greenutest/         research harness (adapters, signals, routing, energy, runner)
-tests/                   deterministic no-GPU tests
+assets/                 academic framework SVG
+configs/                experiment + study matrix + policy/prompt/retry controls
+data/                   model/dataset/baseline manifests + run-log schema
+docs/                   protocol, telemetry and preflight guardrails
+scripts/                fetch, verify, split, freeze, snapshot and telemetry helpers
+src/greenutest/         adapters, model backends, uncertainty, routing, energy and runners
+tests/                  deterministic no-GPU/invariant tests
 ```
 
-## Reproducibility
+## Freeze contract
 
-Before a full run, archive:
+Before held-out execution archive/freeze:
 
-- Git commit SHA;
-- Python, OS, CUDA, driver, PyTorch, Transformers versions;
-- GPU name + dedicated VRAM;
-- model revision + tokenizer revision + quantization;
-- benchmark revision/checksum;
-- prompt version;
-- task split hash;
-- random seeds;
-- energy sampling interval;
-- policy configuration hash;
-- frozen confirmatory-analysis-plan hash.
+- GreenUTest Git SHA;
+- analysis-plan hash;
+- benchmark Git revisions and external dataset snapshot hashes;
+- group-disjoint task split hash;
+- model IDs + open-weight Hub revisions/tokenizer revisions/quantization;
+- hosted provider canonical model IDs;
+- prompt version/hash;
+- random seeds and provider sampling policy;
+- energy sampling configuration;
+- routing/calibration/VoI parameters;
+- evaluation tool/container versions;
+- machine/GPU/runtime metadata.
 
-See [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+Read [`docs/PREFLIGHT.md`](docs/PREFLIGHT.md) and [`docs/PROTOCOL.md`](docs/PROTOCOL.md) before scaling.
 
 ## Security
 
-Generated tests and benchmark repositories are **untrusted code**. The default dry-run is safe because it does not execute external code. Real benchmarks should be executed in isolated environments/containers with network access disabled where feasible, resource/time limits, and explicit workspace boundaries. Read [`SECURITY.md`](SECURITY.md) before enabling benchmark execution.
+Generated tests and benchmark repositories are **untrusted executable code**. Execute real benchmarks in isolated containers/environments with explicit filesystem, network, time and resource boundaries. See [`SECURITY.md`](SECURITY.md).
 
-## Citation
+## Citation and license
 
-A `CITATION.cff` file is included for the software artifact. Paper citation metadata should be added only after publication/acceptance.
-
-## License
-
-GreenUTest's original code is released under the Apache License 2.0. Third-party benchmarks, models, datasets, and baseline implementations remain under their respective licenses; see [`THIRD_PARTY.md`](THIRD_PARTY.md).
+`CITATION.cff` covers the software artifact. GreenUTest original code is Apache-2.0; third-party datasets/models/baselines retain their own terms. See [`THIRD_PARTY.md`](THIRD_PARTY.md).

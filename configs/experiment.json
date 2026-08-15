@@ -1,5 +1,6 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "updated": "2026-08-15",
   "pilot": {
     "name": "greenutest-pilot",
     "partition": "pilot",
@@ -24,8 +25,20 @@
     "split_seed": "TBD",
     "heldout_task_ids_sha256": "TBD",
     "code_commit_sha": "TBD",
-    "primary_quality_endpoint": "TBD_ONE_OF_mutation_score_or_real_fault_detection",
-    "primary_energy_endpoint": "task_time_direct_gpu_wh",
+    "primary_quality_endpoint_by_rq": {
+      "rq1": "error_or_low_value_test_risk_discrimination_and_calibration",
+      "rq2": "mutation_or_coverage_quality_at_matched_resource_budget",
+      "rq3a": "fail_to_pass_real_fault_discovery",
+      "rq3b": "relative_detection_rate_on_realistic_mutants"
+    },
+    "primary_local_energy_endpoint": "task_time_direct_gpu_wh",
+    "hosted_api_resource_endpoints": [
+      "input_tokens",
+      "output_tokens",
+      "latency_s",
+      "call_count"
+    ],
+    "hosted_api_energy_policy": "do_not_estimate_provider_energy_without_verifiable_provider_telemetry",
     "quality_noninferiority_margin": "TBD_FROM_EXCLUDED_PILOT",
     "matched_energy_budgets_wh": "TBD_FROM_EXCLUDED_PILOT",
     "lambda_energy": "TBD_FROM_EXCLUDED_PILOT",
@@ -38,7 +51,10 @@
   "models": {
     "qwen25coder15b": {
       "id": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
-      "role": "cheap_local_generator",
+      "family": "qwen2.5-coder",
+      "role": "cheap_open_generator",
+      "study_tier": "core_controlled_scaling",
+      "deployment": "local_or_self_hosted",
       "backend": "transformers",
       "revision": "TBD_PIN_BEFORE_RUN",
       "dtype": "auto",
@@ -47,12 +63,16 @@
       "max_new_tokens": 1024,
       "temperature": 0.2,
       "top_p": 0.95,
+      "do_sample": true,
       "license": "Apache-2.0",
-      "do_sample": true
+      "direct_energy_observable": true
     },
     "qwen25coder7b": {
       "id": "Qwen/Qwen2.5-Coder-7B-Instruct",
-      "role": "strong_local_generator",
+      "family": "qwen2.5-coder",
+      "role": "stronger_same_family_generator",
+      "study_tier": "core_controlled_scaling",
+      "deployment": "local_or_self_hosted",
       "backend": "transformers",
       "revision": "TBD_PIN_BEFORE_RUN",
       "dtype": "auto",
@@ -61,12 +81,96 @@
       "max_new_tokens": 1024,
       "temperature": 0.2,
       "top_p": 0.95,
+      "do_sample": true,
       "license": "Apache-2.0",
-      "do_sample": true
+      "direct_energy_observable": true
+    },
+    "qwen3coder30ba3b": {
+      "id": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+      "family": "qwen3-coder",
+      "role": "strong_open_moe_generator",
+      "study_tier": "core_open_scaling",
+      "deployment": "local_or_self_hosted",
+      "backend": "transformers",
+      "revision": "TBD_PIN_BEFORE_RUN",
+      "dtype": "auto",
+      "quantization": "TBD_AFTER_HARDWARE_PILOT",
+      "trust_remote_code": false,
+      "max_new_tokens": 2048,
+      "temperature": 0.2,
+      "top_p": 0.95,
+      "do_sample": true,
+      "license": "Apache-2.0",
+      "parameter_note": "30.5B_total_3.3B_activated",
+      "direct_energy_observable": true
+    },
+    "qwen3codernext": {
+      "id": "Qwen/Qwen3-Coder-Next",
+      "family": "qwen3-coder-next",
+      "role": "frontier_open_moe_generator",
+      "study_tier": "core_open_scaling",
+      "deployment": "local_or_self_hosted",
+      "backend": "transformers",
+      "revision": "TBD_PIN_BEFORE_RUN",
+      "dtype": "auto",
+      "quantization": "TBD_AFTER_HARDWARE_PILOT",
+      "trust_remote_code": false,
+      "max_new_tokens": 2048,
+      "temperature": 0.2,
+      "top_p": 0.95,
+      "do_sample": true,
+      "license": "Apache-2.0",
+      "parameter_note": "80B_total_approximately_3B_activated",
+      "direct_energy_observable": true
+    },
+    "gpt56sol": {
+      "id": "gpt-5.6-sol",
+      "family": "gpt-5.6",
+      "provider": "openai",
+      "role": "frontier_hosted_generalization",
+      "study_tier": "core_frontier_generalization",
+      "deployment": "hosted_api",
+      "backend": "openai_responses",
+      "model_version_policy": "canonical_provider_model_id",
+      "reasoning_effort": "medium",
+      "max_output_tokens": 4096,
+      "direct_energy_observable": false,
+      "uncertainty_note": "no cross-provider token-NLL assumption; use behavioral/execution/oracle signals unless verified logprobs are available"
+    },
+    "claudesonnet5": {
+      "id": "claude-sonnet-5",
+      "family": "claude-sonnet",
+      "provider": "anthropic",
+      "role": "frontier_hosted_generalization",
+      "study_tier": "core_frontier_generalization",
+      "deployment": "hosted_api",
+      "backend": "anthropic_messages",
+      "model_version_policy": "canonical_pinned_provider_model_id",
+      "max_output_tokens": 4096,
+      "direct_energy_observable": false,
+      "sampling_note": "Sonnet 5 rejects non-default temperature/top_p/top_k; do not inject custom sampling parameters",
+      "uncertainty_note": "behavioral/execution/oracle signals; token-NLL not assumed available"
+    },
+    "gemini36flash": {
+      "id": "gemini-3.6-flash",
+      "family": "gemini-3.x-flash",
+      "provider": "google",
+      "role": "frontier_hosted_generalization",
+      "study_tier": "core_frontier_generalization",
+      "deployment": "hosted_api",
+      "backend": "google_genai",
+      "model_version_policy": "stable_GA_model_id",
+      "max_output_tokens": 4096,
+      "direct_energy_observable": false,
+      "sampling_note": "temperature/top_p/top_k are deprecated for this generation; keep provider defaults",
+      "uncertainty_note": "behavioral/execution/oracle signals; token-NLL not assumed available"
     },
     "mistral7b": {
       "id": "mistralai/Mistral-7B-Instruct-v0.3",
-      "role": "cross_family_robustness_generator",
+      "family": "mistral",
+      "role": "optional_cross_family_robustness",
+      "study_tier": "optional_appendix",
+      "deployment": "local_or_self_hosted",
       "backend": "transformers",
       "revision": "TBD_PIN_BEFORE_RUN",
       "dtype": "auto",
@@ -75,43 +179,66 @@
       "max_new_tokens": 1024,
       "temperature": 0.2,
       "top_p": 0.95,
+      "do_sample": true,
       "license": "Apache-2.0",
-      "do_sample": true
+      "direct_energy_observable": true
     }
   },
   "benchmarks": {
+    "ult": {
+      "type": "ult_family",
+      "root": "external/UnLeakedTestBench",
+      "dataset": "datasets/ULT.jsonl",
+      "lite_dataset": "datasets/ULT_Lite.jsonl",
+      "role": "core_rq1_uncertainty_and_rq2_function_level_efficiency",
+      "confirmatory_priority": "P0"
+    },
+    "plt": {
+      "type": "ult_family",
+      "root": "external/UnLeakedTestBench",
+      "dataset": "datasets/PLT.jsonl",
+      "role": "diagnostic_contamination_memorization_vs_reasoning",
+      "confirmatory_priority": "diagnostic_not_primary"
+    },
+    "testgeneval": {
+      "type": "testgeneval",
+      "root": "external/testgeneval",
+      "dataset": "kjain14/testgeneval",
+      "lite_dataset": "kjain14/testgenevallite",
+      "role": "core_rq2_realistic_test_effectiveness_coverage_mutation",
+      "confirmatory_priority": "P0"
+    },
     "testgeneval_lite": {
       "type": "testgeneval",
       "root": "external/testgeneval",
       "dataset": "kjain14/testgenevallite",
-      "role": "optional_repository_level_robustness"
-    },
-    "ult": {
-      "type": "ult",
-      "root": "external/UnLeakedTestBench",
-      "dataset": "datasets/ULT.jsonl",
-      "lite_dataset": "datasets/ULT_Lite.jsonl",
-      "role": "primary"
-    },
-    "swe_mutation": {
-      "type": "swe_mutation",
-      "root": "external/SWE-Mutation",
-      "role": "discriminative_suite_stress_test"
-    },
-    "bugsinpy": {
-      "type": "bugsinpy",
-      "root": "external/BugsInPy",
-      "role": "real_fault_validation"
-    },
-    "toy": {
-      "type": "toy",
-      "role": "smoke_test_only"
+      "role": "pilot_only_fast_integration",
+      "confirmatory_priority": "pilot_only"
     },
     "testexplora": {
       "type": "testexplora",
       "root": "external/TestExplora",
-      "role": "secondary_proactive_real_fault_validation",
-      "execution_status": "manifest_only_until_local_dataset_path_is_audited"
+      "role": "core_rq3_proactive_real_fault_fail_to_pass",
+      "confirmatory_priority": "P0",
+      "execution_status": "manifest_and_harness_pinned_dataset_artifact_hash_required_locally"
+    },
+    "swe_mutation": {
+      "type": "swe_mutation",
+      "root": "external/SWE-Mutation",
+      "dataset": "data/curated_mutations.jsonl",
+      "role": "core_rq3_discriminative_realistic_mutant_detection",
+      "confirmatory_priority": "P0"
+    },
+    "bugsinpy": {
+      "type": "bugsinpy",
+      "root": "external/BugsInPy",
+      "role": "optional_classical_real_bug_external_validity",
+      "confirmatory_priority": "optional"
+    },
+    "toy": {
+      "type": "toy",
+      "role": "smoke_test_only",
+      "confirmatory_priority": "CI_only"
     }
   },
   "policies": {

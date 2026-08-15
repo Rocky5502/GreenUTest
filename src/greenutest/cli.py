@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from . import __version__
 from .runner import run_toy, run_ult_generation_pilot
-from .harness import ToyAdapter, build_local_model_from_config
+from .harness import ToyAdapter, build_local_model_from_config, build_model_backend_from_config
 
 
 def doctor(require_nvml: bool = False) -> int:
@@ -22,6 +22,9 @@ def doctor(require_nvml: bool = False) -> int:
         "pynvml": importlib.util.find_spec("pynvml") is not None,
         "torch": importlib.util.find_spec("torch") is not None,
         "transformers": importlib.util.find_spec("transformers") is not None,
+        "openai": importlib.util.find_spec("openai") is not None,
+        "anthropic": importlib.util.find_spec("anthropic") is not None,
+        "google_genai": importlib.util.find_spec("google.genai") is not None if importlib.util.find_spec("google") else False,
     }
     print(json.dumps(rows, indent=2))
     if require_nvml and not rows["pynvml"]:
@@ -34,22 +37,34 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="greenutest")
     parser.add_argument("--version", action="version", version=__version__)
     sub = parser.add_subparsers(dest="command", required=True)
+
     p_doc = sub.add_parser("doctor", help="Inspect local prerequisites without downloading anything")
     p_doc.add_argument("--require-nvml", action="store_true")
+
     p_dry = sub.add_parser("dry-run", help="Run deterministic toy orchestration; no external code/GPU")
     p_dry.add_argument("--output", default="artifacts/dry-run")
     p_dry.add_argument("--seed", type=int, default=20260815)
+
     sub.add_parser("inspect-manifest", help="Print benchmark upstream manifest")
-    p_models = sub.add_parser("inspect-model-plan", help="Print configured local model tiers without loading weights")
+
+    p_models = sub.add_parser("inspect-model-plan", help="Print all configured local and hosted model tiers without loading models")
     p_models.add_argument("--config", default="configs/experiment.json")
+
     p_smoke = sub.add_parser("model-smoke", help="Load one configured local model and generate one toy test; this may use GPU")
     p_smoke.add_argument("--config", default="configs/experiment.json")
     p_smoke.add_argument("--model", default="qwen25coder15b")
     p_smoke.add_argument("--seed", type=int, default=20260815)
+
+    p_api = sub.add_parser("api-smoke", help="Call one configured hosted API model on a toy task; provider energy is not inferred")
+    p_api.add_argument("--config", default="configs/experiment.json")
+    p_api.add_argument("--model", default="gpt56sol")
+    p_api.add_argument("--seed", type=int, default=20260815)
+
     p_ult = sub.add_parser("ult-generation-pilot", help="Run excluded ULT generation-only preflight; loads a real model and may use GPU")
     p_ult.add_argument("--config", default="configs/experiment.json")
     p_ult.add_argument("--dataset", required=True, help="Path to pinned ULT/ULT_Lite file")
     p_ult.add_argument("--model", default="qwen25coder15b")
+    p_ult.add_argument("--benchmark", choices=["ult", "plt"], default="ult")
     p_ult.add_argument("--output", default="artifacts/ult-generation-pilot")
     p_ult.add_argument("--max-tasks", type=int, default=4)
     p_ult.add_argument("--seed", type=int, default=20260815)
@@ -72,7 +87,19 @@ def main(argv: list[str] | None = None) -> int:
         cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
         rows = {}
         for key, model in cfg["models"].items():
-            rows[key] = {"id": model["id"], "role": model.get("role"), "revision": model.get("revision"), "quantization": model.get("quantization"), "do_sample": model.get("do_sample"), "temperature": model.get("temperature"), "top_p": model.get("top_p")}
+            rows[key] = {
+                "id": model["id"],
+                "role": model.get("role"),
+                "study_tier": model.get("study_tier"),
+                "deployment": model.get("deployment"),
+                "backend": model.get("backend"),
+                "revision": model.get("revision"),
+                "quantization": model.get("quantization"),
+                "direct_energy_observable": model.get("direct_energy_observable"),
+                "do_sample": model.get("do_sample"),
+                "temperature": model.get("temperature"),
+                "top_p": model.get("top_p"),
+            }
         print(json.dumps(rows, indent=2))
         return 0
     if args.command == "model-smoke":
@@ -80,10 +107,41 @@ def main(argv: list[str] | None = None) -> int:
         if args.model not in cfg["models"]:
             print(f"Unknown model key: {args.model}", file=sys.stderr)
             return 2
-        backend = build_local_model_from_config(cfg["models"][args.model], allow_unpinned=True)
+        spec = cfg["models"][args.model]
+        if spec.get("backend") != "transformers":
+            print("model-smoke requires a local/self-hosted Transformers model; use api-smoke for hosted models", file=sys.stderr)
+            return 2
+        backend = build_local_model_from_config(spec, allow_unpinned=True)
         task = next(iter(ToyAdapter().tasks()))
         candidate = backend.generate(task, seed=args.seed)
-        print(json.dumps({"model_key": args.model, "model_id": candidate.model_id, "task_id": task.task_id, "raw_confidence": candidate.raw_confidence, "token_nll": candidate.token_nll, "metadata": candidate.metadata, "preview": candidate.text[:500], "warning": "Exploratory smoke only. Pin resolved model/tokenizer revisions before confirmatory execution."}, indent=2))
+        print(json.dumps({
+            "model_key": args.model,
+            "model_id": candidate.model_id,
+            "task_id": task.task_id,
+            "raw_confidence": candidate.raw_confidence,
+            "token_nll": candidate.token_nll,
+            "metadata": candidate.metadata,
+            "preview": candidate.text[:500],
+            "warning": "Exploratory smoke only. Pin resolved model/tokenizer revisions before confirmatory execution.",
+        }, indent=2))
+        return 0
+    if args.command == "api-smoke":
+        cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
+        if args.model not in cfg["models"]:
+            print(f"Unknown model key: {args.model}", file=sys.stderr)
+            return 2
+        spec = cfg["models"][args.model]
+        if spec.get("deployment") != "hosted_api":
+            print("api-smoke requires a hosted_api model; use model-smoke for local models", file=sys.stderr)
+            return 2
+        backend = build_model_backend_from_config(spec, allow_unpinned=True)
+        task = next(iter(ToyAdapter().tasks()))
+        candidate = backend.generate(task, seed=args.seed)
+        print(json.dumps({
+            "model_key": args.model, "model_id": candidate.model_id, "task_id": task.task_id,
+            "metadata": candidate.metadata, "preview": candidate.text[:500],
+            "warning": "Exploratory API smoke only. Provider-side energy is unknown and is not estimated."
+        }, indent=2))
         return 0
     if args.command == "ult-generation-pilot":
         cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
@@ -92,7 +150,7 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         path = run_ult_generation_pilot(
             args.dataset, cfg["models"][args.model], args.output,
-            max_tasks=args.max_tasks, seed=args.seed, measure_energy=args.measure_energy,
+            benchmark_name=args.benchmark, max_tasks=args.max_tasks, seed=args.seed, measure_energy=args.measure_energy,
             device_index=args.device_index, sampling_interval_ms=args.sampling_interval_ms,
         )
         print(path)

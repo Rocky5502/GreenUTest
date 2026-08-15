@@ -19,7 +19,7 @@ def main():
         print(f'{"OK" if ok else "FAIL"} {name}: HEAD {head} expected {expected}')
         failures += 0 if ok else 1
         if name=='ult' and ok:
-            for path_key,sha_key in [('path_hint','git_blob_sha'),('lite_path_hint','lite_git_blob_sha')]:
+            for path_key,sha_key in [('path_hint','git_blob_sha'),('lite_path_hint','lite_git_blob_sha'),('plt_path_hint','plt_git_blob_sha')]:
                 rel=spec[path_key]; actual=git(checkout,'hash-object',rel); want=spec[sha_key]; same=actual==want
                 print(f'  {"OK" if same else "FAIL"} {rel}: blob {actual} expected {want}')
                 failures += 0 if same else 1

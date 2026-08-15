@@ -1,54 +1,80 @@
-# Local model telemetry contract
+# Model telemetry and provider contract
 
-GreenUTest's local Hugging Face backend is designed to make uncertainty and compute accounting auditable before any confirmatory result is produced.
+GreenUTest deliberately separates **self-hosted telemetry** from **hosted-provider telemetry** so uncertainty/resource claims are based only on observable evidence.
 
-## Model tiers
+## Core tiers
 
-The pre-pilot candidate plan is:
+- `qwen25coder15b`: cheap controlled tier.
+- `qwen25coder7b`: stronger same-family controlled tier.
+- `qwen3coder30ba3b`: strong open sparse/MoE tier.
+- `qwen3codernext`: frontier open sparse/MoE tier.
+- `gpt56sol`: OpenAI frontier hosted condition.
+- `claudesonnet5`: Anthropic frontier hosted condition.
+- `gemini36flash`: Google frontier hosted condition.
 
-- `qwen25coder15b`: cheap tier (`Qwen/Qwen2.5-Coder-1.5B-Instruct`)
-- `qwen25coder7b`: stronger same-family tier (`Qwen/Qwen2.5-Coder-7B-Instruct`)
-- `mistral7b`: cross-family robustness tier (`mistralai/Mistral-7B-Instruct-v0.3`)
+`mistral7b` is optional cross-family appendix robustness.
 
-These IDs are not frozen scientific commitments until the excluded hardware/model pilot finishes and exact model/tokenizer revisions plus quantization are written into the frozen configuration.
+## Self-hosted candidate telemetry
 
-## Candidate-level telemetry
-
-Each local generation records:
+Each local Hugging Face generation records where available:
 
 - mean generated-token negative log-likelihood (`token_nll`);
-- raw confidence = `exp(-mean_NLL)` (uncalibrated geometric-mean generated-token probability);
+- raw confidence = `exp(-mean_NLL)` (uncalibrated);
 - prompt SHA-256;
 - prompt token count;
 - generated token count;
-- seed and sampling settings;
-- requested model revision;
-- resolved model Hub commit hash when exposed by Transformers;
-- resolved tokenizer Hub commit hash when exposed by Transformers.
+- seed and supported sampling settings;
+- requested Hub revision;
+- resolved model/tokenizer commit hashes;
+- NVML power trace/energy when enabled.
 
-Raw confidence is a baseline signal only. It must not be described as calibrated probability before calibration-fit evaluation.
+`build_local_model_from_config(..., allow_unpinned=False)` rejects unresolved open-weight revisions. Quantization must also be explicitly implemented/validated before it can be frozen.
 
-## No-GPU inspection
+## Hosted API telemetry
+
+Hosted backends are lazy and do not import provider SDKs until a generation is requested. They archive:
+
+- canonical configured model ID;
+- provider/response model metadata when exposed;
+- provider response/request ID when exposed;
+- input/output/total token usage when exposed;
+- wall-clock latency;
+- call count in downstream aggregation;
+- prompt/task provenance through the common run record.
+
+Hosted candidates intentionally set `token_nll=None` and `raw_confidence=None` unless a provider-specific logprob path is explicitly validated and frozen. This prevents silent substitution of incomparable confidence definitions.
+
+Provider-side energy is **unknown** unless the provider supplies verifiable telemetry. GreenUTest records no fabricated Joule estimate.
+
+## Sampling constraints
+
+Do not force one sampling API across providers:
+
+- self-hosted Qwen/Mistral conditions can freeze temperature/top-p and seeds;
+- GPT-5.6 Sol uses its supported reasoning-effort configuration;
+- Claude Sonnet 5 uses provider defaults for sampling parameters that the current API rejects when overridden;
+- Gemini 3.6 Flash uses the current provider API defaults and does not receive deprecated temperature/top-p/top-k controls.
+
+The exact configuration is archived before held-out execution.
+
+## Inspection and smoke commands
+
+No model loading:
 
 ```bash
 python -m greenutest inspect-model-plan --config configs/experiment.json
 ```
 
-This command does not import model weights.
-
-## First model smoke test
-
-Only after the environment and NVML telemetry checks pass:
+Self-hosted exploratory smoke:
 
 ```bash
-python -m greenutest model-smoke \
-  --config configs/experiment.json \
-  --model qwen25coder15b \
-  --seed 20260815
+python -m greenutest model-smoke --model qwen25coder15b
 ```
 
-This command may download/load weights and use the GPU. It is **exploratory pilot activity**. Copy the resolved model/tokenizer revisions into the configuration before confirmatory execution.
+Hosted exploratory smoke (requires `.[remote-api]` and provider credentials):
 
-## Confirmatory guard
-
-`build_local_model_from_config(..., allow_unpinned=False)` rejects unresolved revisions. Quantized loading is also rejected unless that loading path has been explicitly implemented and validated; GreenUTest must never silently ignore a frozen quantization setting.
+```bash
+python -m greenutest api-smoke --model gpt56sol
+python -m greenutest api-smoke --model claudesonnet5
+python -m greenutest api-smoke --model gemini36flash
+```

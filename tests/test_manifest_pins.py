@@ -3,9 +3,7 @@ import re
 import unittest
 from pathlib import Path
 
-
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
-
 
 class ManifestPinTests(unittest.TestCase):
     @classmethod
@@ -22,12 +20,17 @@ class ManifestPinTests(unittest.TestCase):
         for name in ("starouter", "pynguin"):
             self.assertRegex(self.manifest["baseline_sources"][name]["pinned_commit"], HEX40)
 
-    def test_ult_selected_files_have_blob_identity(self):
+    def test_ult_family_selected_files_have_blob_identity(self):
         ult = self.manifest["sources"]["ult"]
-        self.assertRegex(ult["git_blob_sha"], HEX40)
-        self.assertRegex(ult["lite_git_blob_sha"], HEX40)
+        for key in ("git_blob_sha", "lite_git_blob_sha", "plt_git_blob_sha"):
+            self.assertRegex(ult[key], HEX40)
+        self.assertGreater(ult["plt_size_bytes"], ult["size_bytes"])
         self.assertGreater(ult["size_bytes"], ult["lite_size_bytes"])
 
+    def test_testgeneval_full_is_canonical_confirmatory_dataset(self):
+        tge = self.manifest["sources"]["testgeneval"]
+        self.assertEqual(tge["dataset_full"], "kjain14/testgeneval")
+        self.assertEqual(tge["dataset_lite"], "kjain14/testgenevallite")
 
 if __name__ == "__main__":
     unittest.main()

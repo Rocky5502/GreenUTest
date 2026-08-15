@@ -12,7 +12,7 @@
 <text x="70" y="94" class="sub">Acquire evidence only when its expected decision value justifies its direct energy cost.</text>
 
 <rect x="55" y="125" width="1490" height="150" class="layer"/><text x="80" y="151" class="lab">A — TASK &amp; INITIAL GENERATION</text>
-<rect x="90" y="175" width="280" height="70" class="box" fill="#eef6ff"/><text x="230" y="205" text-anchor="middle" class="h">Testing task</text><text x="230" y="228" text-anchor="middle" class="small">ULT • BugsInPy • SWE-Mutation</text>
+<rect x="90" y="175" width="280" height="70" class="box" fill="#eef6ff"/><text x="230" y="205" text-anchor="middle" class="h">Testing task</text><text x="230" y="228" text-anchor="middle" class="small">ULT • TestGenEval • TestExplora • SWE-Mutation</text>
 <rect x="495" y="175" width="280" height="70" class="box" fill="#eef6ff"/><text x="635" y="205" text-anchor="middle" class="h">Cheap generator</text><text x="635" y="228" text-anchor="middle" class="small">local / low-compute model tier</text>
 <rect x="900" y="175" width="280" height="70" class="box" fill="#eef6ff"/><text x="1040" y="205" text-anchor="middle" class="h">Candidate test</text><text x="1040" y="228" text-anchor="middle" class="small">test body + oracle + metadata</text>
 <path d="M370 210 H495" class="arrow"/><path d="M775 210 H900" class="arrow"/>
@@ -34,7 +34,7 @@
 
 <rect x="55" y="730" width="1490" height="165" class="layer"/><text x="80" y="757" class="lab">D — FAULT-ORIENTED EVALUATION &amp; TELEMETRY</text>
 <rect x="90" y="785" width="400" height="80" class="box" fill="#eef6ff"/><text x="290" y="816" text-anchor="middle" class="h">Testing effectiveness</text><text x="290" y="842" text-anchor="middle" class="t">validity • false validation • mutation • real faults • coverage</text>
-<rect x="590" y="785" width="330" height="80" class="box" fill="#fff7e8"/><text x="755" y="816" text-anchor="middle" class="h">Direct energy telemetry</text><text x="755" y="842" text-anchor="middle" class="t">phase-tagged NVML J / Wh</text>
+<rect x="590" y="785" width="330" height="80" class="box" fill="#fff7e8"/><text x="755" y="816" text-anchor="middle" class="h">Resource telemetry</text><text x="755" y="842" text-anchor="middle" class="t">local NVML J / Wh • hosted tokens / latency</text>
 <rect x="1020" y="785" width="420" height="80" class="box" fill="#f1f5f9"/><text x="1230" y="816" text-anchor="middle" class="h">Immutable task-level run record</text><text x="1230" y="842" text-anchor="middle" class="t">evidence • action trace • outcome • hashes • environment</text>
 <path d="M550 654 V745 H290 V785" class="arrow"/><path d="M755 654 V785" class="arrow"/><path d="M975 654 V745 H290 V785" class="arrow"/><path d="M1195 654 V745 H290 V785" class="arrow"/><path d="M490 825 H590" class="arrow"/><path d="M920 825 H1020" class="arrow"/>
 

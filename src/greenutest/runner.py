@@ -16,7 +16,7 @@ from greenutest.harness import (
     NullEnergyMeter,
     ToyAdapter,
     ULTAdapter,
-    build_local_model_from_config,
+    build_model_backend_from_config,
     lexical_uncertainty,
     static_risk,
     summarize_power,
@@ -90,6 +90,7 @@ def run_generation_pilot(
     validate real model generation, lexical uncertainty telemetry, provenance, and optional
     task-time GPU energy before the execution/mutation pipeline is enabled.
     """
+
     if max_tasks < 1:
         raise ValueError("max_tasks must be positive")
     out = Path(output)
@@ -206,18 +207,29 @@ def run_ult_generation_pilot(
     model_config: dict,
     output: str | Path,
     *,
+    benchmark_name: str = "ult",
     max_tasks: int = 4,
     seed: int = 20260815,
     measure_energy: bool = False,
     device_index: int = 0,
     sampling_interval_ms: int = 100,
 ) -> Path:
-    """Convenience wrapper for the first real ULT + local-model pilot."""
-    adapter = ULTAdapter(dataset)
-    model = build_local_model_from_config(model_config, allow_unpinned=True)
+    """Run the excluded ULT/PLT generation-only bridge on any configured model backend.
+
+    NVML measurement is supported only for self-hosted Transformers backends. Hosted providers
+    retain token/latency metadata and intentionally do not receive a fabricated Joule estimate.
+    """
+    if benchmark_name not in {"ult", "plt"}:
+        raise ValueError("benchmark_name must be 'ult' or 'plt'")
+    adapter = ULTAdapter(dataset, benchmark_name=benchmark_name)
+    model = build_model_backend_from_config(model_config, allow_unpinned=True)
     factory = None
     if measure_energy:
-        factory = lambda: NVMLPowerSampler(device_index=device_index, interval_s=sampling_interval_ms / 1000.0)
+        if model_config.get("backend") != "transformers":
+            raise ValueError("--measure-energy is only valid for directly observed self-hosted Transformers runs")
+        factory = lambda: NVMLPowerSampler(
+            device_index=device_index, interval_s=sampling_interval_ms / 1000.0
+        )
     return run_generation_pilot(
         adapter.tasks(), model, output, max_tasks=max_tasks, seed=seed, energy_sampler_factory=factory
     )
