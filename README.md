@@ -155,6 +155,8 @@ Recommended first local-model experiment profile:
 
 Model IDs are configuration defaults, **not scientific commitments** until `configs/frozen/` is generated.
 
+The local Transformers backend records generated-token mean NLL, an uncalibrated geometric-mean token-probability confidence signal, prompt/token counts, prompt hash, and resolved model/tokenizer revisions. Confirmatory model construction rejects unresolved revisions. See [`docs/MODEL_TELEMETRY.md`](docs/MODEL_TELEMETRY.md).
+
 ## Fetch benchmark sources
 
 Dry-run first. Then inspect the manifest and fetch only the benchmark you need:
@@ -192,6 +194,9 @@ Every task-level record includes experiment identifiers, benchmark/task identity
 python -m greenutest doctor
 python -m greenutest dry-run --output artifacts/dry-run
 python -m greenutest inspect-manifest
+python -m greenutest inspect-model-plan --config configs/experiment.json
+# After telemetry checks only; this loads one model and may use the GPU:
+python -m greenutest model-smoke --config configs/experiment.json --model qwen25coder15b
 python scripts/freeze_analysis_plan.py --input configs/experiment.json --output configs/confirmatory.lock.json
 python scripts/verify_runlog.py artifacts/dry-run/runlog.jsonl
 python scripts/snapshot_environment.py --output artifacts/environment.json

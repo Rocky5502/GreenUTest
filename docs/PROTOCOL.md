@@ -319,3 +319,9 @@ The principal local routing pair should, if the excluded hardware pilot confirms
 ## Routing controls
 
 In addition to STARouter-style state routing, include a clean-room temporal routing control that buys a fixed amount of cheap exploration before deciding whether to escalate. This is inspired by recent trajectory/value-routing work but is not presented as an upstream reproduction. All exploratory turns are charged to its energy/time budget.
+
+## Lexical uncertainty acquisition contract
+
+For local Hugging Face models, GreenUTest records mean generated-token negative log-likelihood directly from generation logits. The raw confidence control is the geometric mean generated-token probability, `exp(-mean_NLL)`, and is explicitly treated as uncalibrated. Prompt SHA-256, prompt/generated token counts, requested model revision, and resolved model/tokenizer Hub commit hashes are recorded with each candidate. The excluded pilot may resolve a floating model snapshot; confirmatory execution refuses unresolved model revisions.
+
+Sampling parameters are part of the frozen configuration. Multi-sample/semantic uncertainty must use distinct predeclared seeds and charge every generation to the corresponding policy.
