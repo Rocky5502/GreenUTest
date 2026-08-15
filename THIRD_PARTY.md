@@ -1,3 +1,11 @@
+GreenUTest
+Copyright 2026 GreenUTest contributors
+
+This repository contains original experiment orchestration code. It does not
+redistribute third-party benchmark corpora, model weights, hidden tests, or
+baseline source code. Third-party resources fetched by helper scripts remain
+subject to their own licenses and terms. See THIRD_PARTY.md.
+
 # Third-party resources
 
 GreenUTest does not vendor benchmark datasets, model weights, or external baseline implementations.
@@ -14,3 +22,6 @@ The following upstream resources are referenced by adapters/setup scripts. **Alw
 | Pynguin | upstream Python package/repository | Traditional non-LLM baseline | Install separately; upstream license applies |
 
 “STARouter-style” and “fixed agentic feedback” policies in this repository are clean-room experimental interfaces that reproduce **comparison concepts**, not copied source code.
+
+- **TestExplora** — Microsoft research benchmark harness, pinned via `data/upstreams.json`; repository license MIT at the audited revision. Benchmark JSON/repository testbeds remain external and retain their own provenance.
+- **Qwen2.5-Coder-1.5B-Instruct / 7B-Instruct** — model weights remain external under the upstream model-card license; GreenUTest records model snapshot revisions rather than redistributing weights.

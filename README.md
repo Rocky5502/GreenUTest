@@ -76,12 +76,13 @@ GreenUTest never tunes thresholds or non-inferiority margins on held-out outcome
 | Benchmark | Role | Redistribution policy |
 |---|---|---|
 | ULT / UnLeakedTestBench | Primary contamination-conscious function-level test generation | Fetch from upstream; do not mirror hidden/ground-truth tests |
-| BugsInPy | Real buggy/fixed pairs and false-validation analysis | Clone upstream; do not vendor projects |
+| BugsInPy | Real buggy/fixed pairs and false-validation analysis | Clone pinned upstream; do not vendor projects |
+| TestExplora | Proactive repository-level Fail-to-Pass validation | Pinned harness + external benchmark JSON; hash locally |
 | SWE-Mutation | Discriminative test-suite stress test | Fetch/clone upstream; respect upstream license |
 | TestGenEvalLite | Repository/file-level robustness extension | External optional benchmark; upstream licensing applies |
 | Toy benchmark | CI/smoke testing only | Included here |
 
-See [`docs/PROTOCOL.md`](docs/PROTOCOL.md) and [`data/upstreams.json`](data/upstreams.json).
+See [`docs/PROTOCOL.md`](docs/PROTOCOL.md), [`data/DATASETS.md`](data/DATASETS.md), and [`data/upstreams.json`](data/upstreams.json).
 
 ## Baselines
 
@@ -94,6 +95,7 @@ The harness includes policy implementations/configuration for:
 - raw-confidence routing;
 - static complexity/risk routing;
 - STARouter-style state routing adapter;
+- SWE-Router-style temporal/exploration routing control;
 - fixed-depth execution/coverage-feedback refinement adapter;
 - specification-first / independent-oracle verification;
 - traditional non-LLM test generation adapter;
@@ -101,7 +103,7 @@ The harness includes policy implementations/configuration for:
 
 “Style” adapters are **clean-room experimental interfaces**, not copied implementations of the original systems. If an upstream implementation is later integrated, it must be pinned and documented separately.
 
-See [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+See [`docs/PROTOCOL.md`](docs/PROTOCOL.md) and [`data/BASELINES.md`](data/BASELINES.md).
 
 ## Quick start — zero GPU burn
 
@@ -146,9 +148,10 @@ python -m greenutest doctor --require-nvml
 
 Recommended first local-model experiment profile:
 
-- cheap/standard tier: `mistralai/Mistral-7B-Instruct-v0.3` or a pinned code-oriented 7B model;
-- optional code-specialized tier: `Qwen/Qwen2.5-Coder-7B-Instruct`;
-- escalation tier: freeze only after the pilot and hardware check.
+- **cheap tier:** `Qwen/Qwen2.5-Coder-1.5B-Instruct`;
+- **strong local tier:** `Qwen/Qwen2.5-Coder-7B-Instruct` (same family, cleaner capability/energy comparison);
+- **cross-family robustness tier:** `mistralai/Mistral-7B-Instruct-v0.3`;
+- exact model/tokenizer revisions and quantization are frozen after the excluded hardware pilot.
 
 Model IDs are configuration defaults, **not scientific commitments** until `configs/frozen/` is generated.
 
@@ -160,9 +163,10 @@ Dry-run first. Then inspect the manifest and fetch only the benchmark you need:
 python scripts/fetch_benchmarks.py --list
 python scripts/fetch_benchmarks.py --name ult --dest external
 python scripts/fetch_benchmarks.py --name bugsinpy --dest external
+python scripts/fetch_benchmarks.py --name testexplora --dest external
 ```
 
-The fetcher records the upstream revision when possible. Large datasets, cloned projects, model weights, benchmark caches, generated tests, and run outputs are ignored by Git.
+The fetcher checks out exact pinned revisions by default. Large datasets, cloned projects, model weights, benchmark caches, generated tests, and run outputs are ignored by Git.
 
 ## Run architecture
 

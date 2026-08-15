@@ -8,6 +8,7 @@ from greenutest.baselines import (
     STARouterStylePolicy,
     SpecificationFirstPlan,
     TraditionalToolPlan,
+    TemporalRoutingPlan,
     build_baseline,
 )
 from greenutest.harness import Action, DecisionState, PowerSample, summarize_power
@@ -26,6 +27,7 @@ class BaselineAndEnergyTests(unittest.TestCase):
         self.assertIsInstance(built["fixed_agentic_feedback"], AgenticFeedbackPlan)
         self.assertIsInstance(built["spec_first"], SpecificationFirstPlan)
         self.assertIsInstance(built["traditional"], TraditionalToolPlan)
+        self.assertIsInstance(built["swe_router_style"], TemporalRoutingPlan)
 
     def test_starouter_style_is_deterministic(self):
         p = STARouterStylePolicy()

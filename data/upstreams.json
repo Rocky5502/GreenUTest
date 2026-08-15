@@ -1,14 +1,68 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "updated": "2026-08-15",
+  "policy": "Fetch exact pinned revisions by default. Override only for explicit exploratory work; re-freeze before confirmatory runs.",
   "sources": {
-    "ult": {"repo": "https://github.com/huangd1999/UnLeakedTestBench.git", "default_branch": "main", "path_hint": "datasets/ULT.jsonl", "lite_path_hint": "datasets/ULT_Lite.jsonl", "license_note": "Re-check upstream repository license/README at fetched revision; preserve benchmark contamination policy."},
-    "bugsinpy": {"repo": "https://github.com/soarsmu/BugsInPy.git", "default_branch": "master", "license_note": "Use upstream framework/project terms; do not vendor checked-out projects."},
-    "swe_mutation": {"repo": "https://github.com/Sunny4Coding/SWE-Mutation.git", "default_branch": "main", "license_note": "MIT reported by GitHub at repository level as of 2026-08-15; re-check at pinned revision."},
-    "testgeneval": {"repo": "https://github.com/facebookresearch/testgeneval.git", "default_branch": "main", "dataset": "kjain14/testgenevallite", "license_note": "Upstream README states majority code is CC-BY-NC and third-party files may differ. Optional only."}
+    "ult": {
+      "repo": "https://github.com/huangd1999/UnLeakedTestBench.git",
+      "default_branch": "main",
+      "pinned_commit": "d992b2d95ff0bececa90bfccd1ea683a3a2bea18",
+      "path_hint": "datasets/ULT.jsonl",
+      "git_blob_sha": "dddf873b2e0b07db725bb90763c29f332d60acea",
+      "size_bytes": 12031357,
+      "lite_path_hint": "datasets/ULT_Lite.jsonl",
+      "lite_git_blob_sha": "bd2831a6db7498f750a7ab3e27ed8a12398710ee",
+      "lite_size_bytes": 427322,
+      "license": "Apache-2.0",
+      "redistribution": "Do not mirror benchmark data in GreenUTest; fetch the pinned upstream. Keep reference tests evaluator-side."
+    },
+    "bugsinpy": {
+      "repo": "https://github.com/soarsmu/BugsInPy.git",
+      "default_branch": "master",
+      "pinned_commit": "11c5f1eea954a42132cfd06bf257766a7963e0fd",
+      "license_note": "Use upstream framework/project terms; do not vendor checked-out projects."
+    },
+    "swe_mutation": {
+      "repo": "https://github.com/Sunny4Coding/SWE-Mutation.git",
+      "default_branch": "main",
+      "pinned_commit": "c9485dc1a31a90a0410c8393da90f65c8682aa24",
+      "license": "MIT",
+      "license_note": "Re-check third-party task/repository licenses before execution or redistribution."
+    },
+    "testgeneval": {
+      "repo": "https://github.com/facebookresearch/testgeneval.git",
+      "default_branch": "main",
+      "pinned_commit": "67ea3ff37643b3078413d6e4fadaae00ce8d9e5d",
+      "dataset": "kjain14/testgenevallite",
+      "license_note": "Upstream repository states majority code is CC-BY-NC; third-party files may differ. Optional robustness benchmark."
+    },
+    "testexplora": {
+      "repo": "https://github.com/microsoft/TestExplora.git",
+      "default_branch": "main",
+      "pinned_commit": "11e6952261f58d3ceb9f4d2571e03aa35dad9523",
+      "license": "MIT",
+      "dataset_note": "Official repo expects a separate benchmark JSON path and does not vendor the benchmark data at repository root. Keep external and record exact dataset artifact hash.",
+      "role": "secondary proactive Fail-to-Pass validation"
+    }
   },
   "baseline_sources": {
-    "starouter": {"repo": "https://github.com/coinse/starouter.git", "role": "optional provenance/upstream reproduction; clean-room starouter_style remains default"},
-    "pynguin": {"repo": "https://github.com/se2p/pynguin.git", "role": "optional traditional non-LLM baseline; pin compatible release before use"}
+    "starouter": {
+      "repo": "https://github.com/coinse/starouter.git",
+      "pinned_commit": "998d84b351fe680d2ed44544c43afb184ec697e6",
+      "role": "optional upstream provenance; clean-room starouter_style remains default"
+    },
+    "pynguin": {
+      "repo": "https://github.com/se2p/pynguin.git",
+      "pinned_commit": "9e7b655e0897094f647a66417418021643770914",
+      "role": "traditional non-LLM baseline; pin compatible release for confirmatory runs"
+    },
+    "testforge": {
+      "paper": "https://arxiv.org/abs/2503.14713",
+      "role": "fixed execution/coverage-feedback agentic baseline; implement clean-room protocol unless official artifact is pinned"
+    },
+    "swe_router": {
+      "paper": "https://arxiv.org/abs/2607.00053",
+      "role": "clean-room temporal value-routing control only; task differs from GreenUTest"
+    }
   }
 }

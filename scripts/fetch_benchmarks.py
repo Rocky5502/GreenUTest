@@ -18,10 +18,11 @@ def run(cmd: list[str], cwd: Path | None = None) -> None:
 
 def main() -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--name", choices=["ult", "bugsinpy", "swe_mutation", "testgeneval"])
+    p.add_argument("--name", choices=["ult", "bugsinpy", "swe_mutation", "testgeneval", "testexplora"])
     p.add_argument("--dest", default="external")
     p.add_argument("--list", action="store_true")
-    p.add_argument("--revision", help="Optional commit/tag to checkout after cloning")
+    p.add_argument("--revision", help="Explicit commit/tag override. By default the manifest pinned_commit is used.")
+    p.add_argument("--floating", action="store_true", help="Use upstream default branch HEAD (exploratory only; never confirmatory).")
     args = p.parse_args()
 
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))["sources"]
@@ -41,10 +42,15 @@ def main() -> int:
         return 2
 
     run(["git", "clone", "--filter=blob:none", spec["repo"], str(target)])
-    if args.revision:
-        run(["git", "checkout", args.revision], cwd=target)
+    revision = args.revision or (None if args.floating else spec.get("pinned_commit"))
+    if revision:
+        run(["git", "checkout", "--detach", revision], cwd=target)
     sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=target, text=True).strip()
-    print(f"Pinned checkout: {target} @ {sha}")
+    expected = None if args.floating else spec.get("pinned_commit")
+    if expected and sha != expected:
+        raise RuntimeError(f"Checkout mismatch for {args.name}: expected {expected}, got {sha}")
+    label = "Floating checkout" if args.floating else "Pinned checkout"
+    print(f"{label}: {target} @ {sha}")
     print("Review the upstream license and README before executing or redistributing any asset.")
     return 0
 

@@ -29,15 +29,36 @@ class ToyAdapter(TaskAdapter):
 
 
 class ULTAdapter(TaskAdapter):
-    def __init__(self,path): self.path=Path(path)
+    """ULT task adapter with strict generator/evaluator separation.
+
+    Upstream ULT files use a `.jsonl` suffix but released variants may be a JSON array.
+    Reference tests (`test_list`) are retained only in an evaluator-side store and are never
+    placed in Task.metadata or model prompts.
+    """
+    def __init__(self,path):
+        self.path=Path(path); self._reference_tests={}
+    def _rows(self):
+        text=self.path.read_text(encoding="utf-8").lstrip()
+        if not text: return []
+        if text.startswith("["):
+            rows=json.loads(text)
+            if not isinstance(rows,list): raise ValueError("ULT JSON root must be a list")
+            return rows
+        return [json.loads(line) for line in text.splitlines() if line.strip()]
     def tasks(self):
         if not self.path.exists(): raise FileNotFoundError(self.path)
-        for i,line in enumerate(self.path.read_text(encoding="utf-8").splitlines()):
-            if not line.strip(): continue
-            row=json.loads(line); tid=str(row.get("task_id") or row.get("id") or row.get("problem_id") or f"ult/{i}")
+        for i,row in enumerate(self._rows()):
+            tid=str(row.get("task_id") or row.get("id") or row.get("problem_id") or f"ult/{i}")
             code=str(row.get("code") or row.get("function") or row.get("source") or row.get("prompt") or "")
             cx=row.get("cyclomatic_complexity") or row.get("complexity")
-            yield Task(tid,"ult",str(row.get("prompt") or "Generate unit tests for the supplied function."),code,row.get("repo") or row.get("repository"),float(cx) if cx is not None else None,{"upstream":row})
+            refs=row.get("test_list") or row.get("tests") or []
+            self._reference_tests[tid]=tuple(str(x) for x in refs)
+            safe_meta={k:v for k,v in row.items() if k not in {"test_list","tests","reference_tests","gold_tests"}}
+            safe_meta["reference_tests_present"]=bool(refs)
+            yield Task(tid,"ult",str(row.get("prompt") or "Generate unit tests for the supplied function."),code,row.get("repo") or row.get("repository"),float(cx) if cx is not None else None,{"upstream":safe_meta})
+    def reference_tests(self,task_id):
+        """Evaluator-only access; never pass this output to a model backend."""
+        return self._reference_tests.get(str(task_id),())
 
 
 class BugsInPyAdapter(TaskAdapter):
@@ -92,15 +113,19 @@ def lexical_uncertainty(c):
     if c.token_nll is not None: return Evidence("lexical_uncertainty",1-math.exp(-max(0.,c.token_nll)),metadata={"source":"token_nll"})
     if c.raw_confidence is not None: return Evidence("lexical_uncertainty",1-c.raw_confidence,metadata={"source":"one_minus_raw_confidence"})
     return Evidence("lexical_uncertainty",None,metadata={"missing":True})
+
 def static_risk(t):
     if t.complexity is None: return Evidence("static_software_risk",None,metadata={"missing":True})
     return Evidence("static_software_risk",min(1.,max(0.,(t.complexity-1)/24)),metadata={"complexity":t.complexity})
+
 def disagreement_rate(signatures):
     if len(signatures)<2: return Evidence("behavioral_disagreement",None,metadata={"reason":"need_at_least_two"})
     majority=max(signatures.count(s) for s in set(signatures)); return Evidence("behavioral_disagreement",1-majority/len(signatures),metadata={"n":len(signatures),"unique":len(set(signatures))})
+
 def oracle_disagreement(a,b):
     if a is None or b is None: return Evidence("oracle_disagreement",None,metadata={"missing":True})
     return Evidence("oracle_disagreement",float(a.strip()!=b.strip()))
+
 def weighted_risk(evidence,weights=None):
     weights=weights or {}; vals=[]
     for e in evidence:
@@ -148,12 +173,15 @@ def integrate_joules(samples):
     if any(not math.isfinite(x.t) or not math.isfinite(x.watts) or x.watts < 0 for x in o):
         raise ValueError("power samples require finite timestamps and non-negative finite watts")
     return sum(.5*(a.watts+b.watts)*(b.t-a.t) for a,b in zip(o,o[1:]))
+
 def summarize_power(samples, idle_watts=0.0):
     if idle_watts < 0: raise ValueError("idle_watts must be non-negative")
     ordered=sorted(samples,key=lambda s:s.t)
     total=integrate_joules(ordered)
     phases={}
     for phase in sorted({s.phase for s in ordered}):
+        phase_samples=[s for s in ordered if s.phase==phase]
+        # Only contiguous same-phase intervals contribute to a phase subtotal.
         e=0.0
         for a,b in zip(ordered,ordered[1:]):
             if a.phase==phase and b.phase==phase:

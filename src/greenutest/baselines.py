@@ -22,6 +22,7 @@ class RoutingPolicy(Protocol):
 @dataclass(frozen=True)
 class MultiSamplePlan:
     """Fixed sample-count baseline; aggregation happens after all samples are acquired."""
+
     samples: int
     aggregation: str = "majority_behavior"
 
@@ -33,6 +34,7 @@ class MultiSamplePlan:
 @dataclass(frozen=True)
 class AgenticFeedbackPlan:
     """Fixed-depth execution/coverage feedback baseline."""
+
     rounds: int
     feedback: tuple[str, ...] = ("execution", "coverage")
 
@@ -44,6 +46,7 @@ class AgenticFeedbackPlan:
 @dataclass(frozen=True)
 class SpecificationFirstPlan:
     """Generate an oracle/specification view independently of candidate implementation output."""
+
     independent_oracle: bool = True
     allow_candidate_implementation_in_oracle_prompt: bool = False
 
@@ -55,6 +58,21 @@ class TraditionalToolPlan:
 
 
 @dataclass(frozen=True)
+class TemporalRoutingPlan:
+    """Clean-room temporal value-routing control.
+
+    A cheap model is allowed a fixed number of exploratory steps before a second routing
+    decision. This is intentionally a protocol object, not a claimed reproduction of SWE-Router.
+    """
+    exploration_steps: int = 2
+    features: tuple[str, ...] = ("risk", "raw_confidence", "complexity", "execution_feedback")
+
+    def __post_init__(self) -> None:
+        if self.exploration_steps < 1:
+            raise ValueError("temporal routing requires at least one exploratory step")
+
+
+@dataclass(frozen=True)
 class STARouterStylePolicy:
     """Clean-room state-feature routing control, not an upstream STARouter reproduction.
 
@@ -62,6 +80,7 @@ class STARouterStylePolicy:
     to isolate the value of calibrated/VoI routing from a simpler state-feature escalation rule.
     Coefficients must be frozen on policy-tuning data before held-out execution.
     """
+
     intercept: float = -0.5
     risk_weight: float = 2.0
     confidence_weight: float = -1.0
@@ -82,14 +101,16 @@ class STARouterStylePolicy:
         return Action.ESCALATE if self.score(state) >= self.threshold else Action.EXECUTE
 
 
-Baseline = RoutingPolicy | MultiSamplePlan | AgenticFeedbackPlan | SpecificationFirstPlan | TraditionalToolPlan
+Baseline = RoutingPolicy | MultiSamplePlan | AgenticFeedbackPlan | SpecificationFirstPlan | TraditionalToolPlan | TemporalRoutingPlan
 
 
 def build_baseline(name: str, config: dict[str, Any]) -> Baseline:
-    """Convert a frozen config entry into a deterministic experiment plan/policy.
+    """Build a baseline from a frozen config entry.
 
-    This function never downloads a model, benchmark, or third-party implementation.
+    This function never downloads a model, benchmark, or third-party implementation. It only
+    converts configuration into a deterministic experiment plan/policy.
     """
+
     kind = config.get("type")
     if kind == "small_model_only":
         return SmallOnlyPolicy()
@@ -116,6 +137,11 @@ def build_baseline(name: str, config: dict[str, Any]) -> Baseline:
         return SpecificationFirstPlan(independent_oracle=bool(config.get("independent_oracle", True)))
     if kind == "traditional_non_llm":
         return TraditionalToolPlan(backend=str(config["backend"]), enabled=bool(config.get("enabled", False)))
+    if kind == "temporal_value_routing":
+        return TemporalRoutingPlan(
+            exploration_steps=int(config.get("exploration_steps", 2)),
+            features=tuple(config.get("features", ("risk", "raw_confidence", "complexity", "execution_feedback"))),
+        )
     if kind == "starouter_style":
         return STARouterStylePolicy(
             intercept=float(config.get("intercept", -0.5)),
