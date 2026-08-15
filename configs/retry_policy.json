@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "infrastructure": {
+    "max_attempts": 3,
+    "retryable": ["rate_limit", "network_timeout", "provider_5xx", "worker_lost"],
+    "backoff_seconds": [5, 30, 120]
+  },
+  "scientific_generation": {
+    "silent_retry_on_invalid_output": false,
+    "retry_counts_as_new_sample": true,
+    "preserve_failed_attempts": true
+  },
+  "principle": "Infrastructure retries may restore an interrupted identical request; model/test failures are observations and must never be silently retried away."
+}

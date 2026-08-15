@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Rocky5502/GreenUTest/data/runlog.schema.json",
+  "title": "GreenUTest task-level run record",
+  "type": "object",
+  "required": ["run_id", "task_id", "benchmark", "partition", "policy", "seed", "candidate", "evidence", "actions", "outcomes", "energy", "status", "metadata"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "benchmark": {"type": "string", "minLength": 1},
+    "partition": {"enum": ["pilot", "calibration_fit", "policy_tuning", "heldout_final"]},
+    "policy": {"type": "string", "minLength": 1},
+    "seed": {"type": "integer"},
+    "candidate": {"type": "object"},
+    "evidence": {"type": "array", "items": {"type": "object"}},
+    "actions": {"type": "array", "items": {"type": "string"}},
+    "outcomes": {"type": "object"},
+    "energy": {"type": "object"},
+    "status": {"type": "string"},
+    "analysis_plan_hash": {"type": ["string", "null"]},
+    "metadata": {"type": "object"}
+  },
+  "additionalProperties": false
+}

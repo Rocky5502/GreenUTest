@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="940" viewBox="0 0 1600 940" role="img" aria-labelledby="title desc">
+<title id="title">GreenUTest framework</title>
+<desc id="desc">Academic framework showing cheap-first uncertainty acquisition, calibrated risk, value-of-information gating, energy-aware routing, and fault-oriented evaluation.</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/></marker>
+  <style>
+    .title{font:700 34px Arial,sans-serif;fill:#0f172a}.sub{font:400 17px Arial,sans-serif;fill:#475569}.h{font:700 20px Arial,sans-serif;fill:#0f172a}.t{font:400 16px Arial,sans-serif;fill:#334155}.small{font:400 14px Arial,sans-serif;fill:#475569}.box{stroke:#334155;stroke-width:2;rx:18}.arrow{stroke:#334155;stroke-width:2.4;fill:none;marker-end:url(#arrow)}.dash{stroke-dasharray:8 7}.layer{fill:none;stroke:#cbd5e1;stroke-width:1.5;rx:24}.lab{font:700 14px Arial,sans-serif;fill:#64748b;letter-spacing:1.4px}
+  </style>
+</defs>
+<rect width="1600" height="940" fill="#ffffff"/>
+<text x="70" y="62" class="title">GreenUTest: uncertainty-guided, energy-adaptive LLM software testing</text>
+<text x="70" y="94" class="sub">Acquire evidence only when its expected decision value justifies its direct energy cost.</text>
+
+<rect x="55" y="125" width="1490" height="150" class="layer"/><text x="80" y="151" class="lab">A — TASK &amp; INITIAL GENERATION</text>
+<rect x="90" y="175" width="280" height="70" class="box" fill="#eef6ff"/><text x="230" y="205" text-anchor="middle" class="h">Testing task</text><text x="230" y="228" text-anchor="middle" class="small">ULT • BugsInPy • SWE-Mutation</text>
+<rect x="495" y="175" width="280" height="70" class="box" fill="#eef6ff"/><text x="635" y="205" text-anchor="middle" class="h">Cheap generator</text><text x="635" y="228" text-anchor="middle" class="small">local / low-compute model tier</text>
+<rect x="900" y="175" width="280" height="70" class="box" fill="#eef6ff"/><text x="1040" y="205" text-anchor="middle" class="h">Candidate test</text><text x="1040" y="228" text-anchor="middle" class="small">test body + oracle + metadata</text>
+<path d="M370 210 H495" class="arrow"/><path d="M775 210 H900" class="arrow"/>
+
+<rect x="55" y="300" width="1490" height="205" class="layer"/><text x="80" y="327" class="lab">B — CHEAP-FIRST EVIDENCE &amp; CALIBRATION</text>
+<rect x="90" y="355" width="330" height="105" class="box" fill="#f7f3ff"/><text x="255" y="385" text-anchor="middle" class="h">Cheap evidence</text><text x="255" y="412" text-anchor="middle" class="t">static software risk</text><text x="255" y="436" text-anchor="middle" class="t">lexical uncertainty • first execution</text>
+<rect x="540" y="355" width="300" height="105" class="box" fill="#fff7e8"/><text x="690" y="385" text-anchor="middle" class="h">Risk calibration</text><text x="690" y="412" text-anchor="middle" class="t">fuse heterogeneous signals</text><text x="690" y="436" text-anchor="middle" class="t">q = P(test unreliable | evidence)</text>
+<polygon points="1015,350 1180,407 1015,464 850,407" fill="#fffbea" stroke="#334155" stroke-width="2"/><text x="1015" y="397" text-anchor="middle" class="h">Value of Information</text><text x="1015" y="423" text-anchor="middle" class="small">expected utility gain − λ × energy</text>
+<rect x="1240" y="355" width="245" height="105" class="box" fill="#f7f3ff"/><text x="1362" y="385" text-anchor="middle" class="h">Conditional evidence</text><text x="1362" y="412" text-anchor="middle" class="small">behavioral disagreement</text><text x="1362" y="434" text-anchor="middle" class="small">independent oracle • strong model</text>
+<path d="M1040 245 V315 H255 V355" class="arrow"/><path d="M420 407 H540" class="arrow"/><path d="M840 407 H850" class="arrow"/><path d="M1180 407 H1240" class="arrow"/><text x="1200" y="390" class="small">buy</text><path d="M1362 460 V480 H690 V460" class="arrow dash"/><text x="1040" y="495" text-anchor="middle" class="small">new evidence updates calibrated risk</text>
+
+<rect x="55" y="530" width="1490" height="175" class="layer"/><text x="80" y="557" class="lab">C — ENERGY-AWARE ACTION ROUTING</text>
+<polygon points="240,585 390,617 240,649 90,617" fill="#eafbf2" stroke="#334155" stroke-width="2"/><text x="240" y="612" text-anchor="middle" class="h">Risk + budget</text><text x="240" y="634" text-anchor="middle" class="small">frozen policy</text>
+<g><rect x="470" y="580" width="160" height="74" class="box" fill="#effaf4"/><text x="550" y="611" text-anchor="middle" class="h">ACCEPT</text><text x="550" y="635" text-anchor="middle" class="small">/ EXECUTE</text></g>
+<g><rect x="675" y="580" width="160" height="74" class="box" fill="#fff7e8"/><text x="755" y="611" text-anchor="middle" class="h">VERIFY</text><text x="755" y="635" text-anchor="middle" class="small">/ REPAIR</text></g>
+<g><rect x="880" y="580" width="190" height="74" class="box" fill="#fff0f0"/><text x="975" y="611" text-anchor="middle" class="h">REGENERATE</text><text x="975" y="635" text-anchor="middle" class="small">/ ESCALATE</text></g>
+<g><rect x="1115" y="580" width="160" height="74" class="box" fill="#f1f5f9"/><text x="1195" y="622" text-anchor="middle" class="h">ABSTAIN</text></g>
+<path d="M1015 464 V535 H240 V585" class="arrow"/><path d="M390 617 H470" class="arrow"/><path d="M390 617 C470 680,600 680,675 617" class="arrow"/><path d="M390 617 C560 710,760 710,880 617" class="arrow"/><path d="M390 617 C650 735,950 735,1115 617" class="arrow"/>
+
+<rect x="55" y="730" width="1490" height="165" class="layer"/><text x="80" y="757" class="lab">D — FAULT-ORIENTED EVALUATION &amp; TELEMETRY</text>
+<rect x="90" y="785" width="400" height="80" class="box" fill="#eef6ff"/><text x="290" y="816" text-anchor="middle" class="h">Testing effectiveness</text><text x="290" y="842" text-anchor="middle" class="t">validity • false validation • mutation • real faults • coverage</text>
+<rect x="590" y="785" width="330" height="80" class="box" fill="#fff7e8"/><text x="755" y="816" text-anchor="middle" class="h">Direct energy telemetry</text><text x="755" y="842" text-anchor="middle" class="t">phase-tagged NVML J / Wh</text>
+<rect x="1020" y="785" width="420" height="80" class="box" fill="#f1f5f9"/><text x="1230" y="816" text-anchor="middle" class="h">Immutable task-level run record</text><text x="1230" y="842" text-anchor="middle" class="t">evidence • action trace • outcome • hashes • environment</text>
+<path d="M550 654 V745 H290 V785" class="arrow"/><path d="M755 654 V785" class="arrow"/><path d="M975 654 V745 H290 V785" class="arrow"/><path d="M1195 654 V745 H290 V785" class="arrow"/><path d="M490 825 H590" class="arrow"/><path d="M920 825 H1020" class="arrow"/>
+
+<text x="80" y="920" class="small">GreenUTest research artifact • conceptual framework; empirical thresholds and model tiers are frozen only after the excluded pilot.</text>
+</svg>

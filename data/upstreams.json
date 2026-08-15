@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "updated": "2026-08-15",
+  "sources": {
+    "ult": {"repo": "https://github.com/huangd1999/UnLeakedTestBench.git", "default_branch": "main", "path_hint": "datasets/ULT.jsonl", "lite_path_hint": "datasets/ULT_Lite.jsonl", "license_note": "Re-check upstream repository license/README at fetched revision; preserve benchmark contamination policy."},
+    "bugsinpy": {"repo": "https://github.com/soarsmu/BugsInPy.git", "default_branch": "master", "license_note": "Use upstream framework/project terms; do not vendor checked-out projects."},
+    "swe_mutation": {"repo": "https://github.com/Sunny4Coding/SWE-Mutation.git", "default_branch": "main", "license_note": "MIT reported by GitHub at repository level as of 2026-08-15; re-check at pinned revision."},
+    "testgeneval": {"repo": "https://github.com/facebookresearch/testgeneval.git", "default_branch": "main", "dataset": "kjain14/testgenevallite", "license_note": "Upstream README states majority code is CC-BY-NC and third-party files may differ. Optional only."}
+  },
+  "baseline_sources": {
+    "starouter": {"repo": "https://github.com/coinse/starouter.git", "role": "optional provenance/upstream reproduction; clean-room starouter_style remains default"},
+    "pynguin": {"repo": "https://github.com/se2p/pynguin.git", "role": "optional traditional non-LLM baseline; pin compatible release before use"}
+  }
+}

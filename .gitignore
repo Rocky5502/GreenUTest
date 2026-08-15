@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Environments
+.venv/
+venv/
+env/
+.conda/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Heavy/external assets
+external/
+models/
+checkpoints/
+cache/
+.huggingface/
+
+# Experiment artifacts
+artifacts/
+results/
+runs/
+logs/
+wandb/
+mlruns/
+*.jsonl.zst
+*.parquet
+*.pt
+*.safetensors
+
+# Generated tests / benchmark worktrees
+generated_tests/
+workspaces/
+benchmark_cache/
+
+# Paper intentionally excluded
+paper/
+manuscript/
+*.aux
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk

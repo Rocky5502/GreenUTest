@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "pilot": {
+    "name": "greenutest-pilot",
+    "partition": "pilot",
+    "seed": 20260815,
+    "benchmark": "toy",
+    "max_tasks": 8,
+    "generator": "fake-cheap",
+    "escalation_model": "fake-strong",
+    "policy": "greenutest",
+    "energy": {"backend": "null", "sampling_interval_ms": 100},
+    "logging": {"store_generated_tests": true, "store_power_samples": true}
+  },
+  "analysis": {
+    "study": "GreenUTest",
+    "status": "FREEZE_AFTER_PILOT_BEFORE_HELDOUT",
+    "split_seed": "TBD",
+    "heldout_task_ids_sha256": "TBD",
+    "code_commit_sha": "TBD",
+    "primary_quality_endpoint": "TBD_ONE_OF_mutation_score_or_real_fault_detection",
+    "primary_energy_endpoint": "task_time_direct_gpu_wh",
+    "quality_noninferiority_margin": "TBD_FROM_EXCLUDED_PILOT",
+    "matched_energy_budgets_wh": "TBD_FROM_EXCLUDED_PILOT",
+    "lambda_energy": "TBD_FROM_EXCLUDED_PILOT",
+    "voi_acquisition_threshold": "TBD_FROM_EXCLUDED_PILOT",
+    "confidence_level": 0.95,
+    "multiplicity": "holm_within_prespecified_families",
+    "pilot_excluded": true,
+    "heldout_used_for_tuning": false
+  },
+  "models": {
+    "mistral7b": {"id": "mistralai/Mistral-7B-Instruct-v0.3", "role": "candidate_local_generator", "backend": "transformers", "revision": "TBD_PIN_BEFORE_RUN", "dtype": "auto", "quantization": "TBD_AFTER_HARDWARE_PILOT", "trust_remote_code": false, "max_new_tokens": 1024, "temperature": 0.2, "top_p": 0.95},
+    "qwen25coder7b": {"id": "Qwen/Qwen2.5-Coder-7B-Instruct", "role": "candidate_code_specialized_generator", "backend": "transformers", "revision": "TBD_PIN_BEFORE_RUN", "dtype": "auto", "quantization": "TBD_AFTER_HARDWARE_PILOT", "trust_remote_code": false, "max_new_tokens": 1024, "temperature": 0.2, "top_p": 0.95}
+  },
+  "benchmarks": {
+    "testgeneval_lite": {"type": "testgeneval", "root": "external/testgeneval", "dataset": "kjain14/testgenevallite", "role": "optional_repository_level_robustness"},
+    "ult": {"type": "ult", "root": "external/UnLeakedTestBench", "dataset": "datasets/ULT.jsonl", "lite_dataset": "datasets/ULT_Lite.jsonl", "role": "primary"},
+    "swe_mutation": {"type": "swe_mutation", "root": "external/SWE-Mutation", "role": "discriminative_suite_stress_test"},
+    "bugsinpy": {"type": "bugsinpy", "root": "external/BugsInPy", "role": "real_fault_validation"},
+    "toy": {"type": "toy", "role": "smoke_test_only"}
+  },
+  "policies": {
+    "raw_confidence": {"type": "raw_confidence_routing", "escalate_if_confidence_below": 0.55},
+    "static_complexity": {"type": "static_complexity_routing", "escalate_if_complexity_at_least": 15},
+    "random_routing": {"type": "random_routing", "escalation_rate": 0.25, "seed": 20260815},
+    "small_only": {"type": "small_model_only"},
+    "greenutest": {"type": "greenutest", "risk_accept": 0.2, "risk_verify": 0.45, "risk_escalate": 0.7, "abstain_above": 0.9, "voi_threshold": 0.0, "lambda_energy": 0.05},
+    "spec_first": {"type": "specification_first", "independent_oracle": true},
+    "traditional": {"type": "traditional_non_llm", "backend": "pynguin", "enabled": false},
+    "strong_only": {"type": "strong_model_only"},
+    "fixed_agentic_feedback": {"type": "fixed_agentic_feedback", "rounds": 3, "note": "fixed execution/coverage feedback depth for comparison"},
+    "starouter_style": {"type": "starouter_style", "note": "clean-room state-feature routing interface; not the authors' source implementation"},
+    "fixed_self_consistency": {"type": "fixed_self_consistency", "samples": 3}
+  }
+}
