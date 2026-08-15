@@ -92,19 +92,15 @@ def lexical_uncertainty(c):
     if c.token_nll is not None: return Evidence("lexical_uncertainty",1-math.exp(-max(0.,c.token_nll)),metadata={"source":"token_nll"})
     if c.raw_confidence is not None: return Evidence("lexical_uncertainty",1-c.raw_confidence,metadata={"source":"one_minus_raw_confidence"})
     return Evidence("lexical_uncertainty",None,metadata={"missing":True})
-
 def static_risk(t):
     if t.complexity is None: return Evidence("static_software_risk",None,metadata={"missing":True})
     return Evidence("static_software_risk",min(1.,max(0.,(t.complexity-1)/24)),metadata={"complexity":t.complexity})
-
 def disagreement_rate(signatures):
     if len(signatures)<2: return Evidence("behavioral_disagreement",None,metadata={"reason":"need_at_least_two"})
     majority=max(signatures.count(s) for s in set(signatures)); return Evidence("behavioral_disagreement",1-majority/len(signatures),metadata={"n":len(signatures),"unique":len(set(signatures))})
-
 def oracle_disagreement(a,b):
     if a is None or b is None: return Evidence("oracle_disagreement",None,metadata={"missing":True})
     return Evidence("oracle_disagreement",float(a.strip()!=b.strip()))
-
 def weighted_risk(evidence,weights=None):
     weights=weights or {}; vals=[]
     for e in evidence:
@@ -148,7 +144,24 @@ class StaticComplexityPolicy:
 class PowerSample: t:float; watts:float; phase:str="unassigned"
 def integrate_joules(samples):
     if len(samples)<2:return 0.
-    o=sorted(samples,key=lambda s:s.t); return sum(.5*(a.watts+b.watts)*(b.t-a.t) for a,b in zip(o,o[1:]))
+    o=sorted(samples,key=lambda s:s.t)
+    if any(not math.isfinite(x.t) or not math.isfinite(x.watts) or x.watts < 0 for x in o):
+        raise ValueError("power samples require finite timestamps and non-negative finite watts")
+    return sum(.5*(a.watts+b.watts)*(b.t-a.t) for a,b in zip(o,o[1:]))
+def summarize_power(samples, idle_watts=0.0):
+    if idle_watts < 0: raise ValueError("idle_watts must be non-negative")
+    ordered=sorted(samples,key=lambda s:s.t)
+    total=integrate_joules(ordered)
+    phases={}
+    for phase in sorted({s.phase for s in ordered}):
+        e=0.0
+        for a,b in zip(ordered,ordered[1:]):
+            if a.phase==phase and b.phase==phase:
+                e += .5*(a.watts+b.watts)*(b.t-a.t)
+        phases[phase]=e
+    duration=max(0.0, ordered[-1].t-ordered[0].t) if len(ordered)>=2 else 0.0
+    idle_adjusted=max(0.0,total-idle_watts*duration)
+    return {"joules":total,"wh":total/3600.0,"idle_adjusted_joules":idle_adjusted,"idle_adjusted_wh":idle_adjusted/3600.0,"duration_s":duration,"by_phase_joules":phases}
 class NullEnergyMeter:
     def __init__(self): self.phases=[]
     def mark(self,p): self.phases.append(p)
