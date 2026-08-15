@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from . import __version__
 from .runner import run_toy
+from .harness import ToyAdapter, build_local_model_from_config
 
 
 def doctor(require_nvml: bool = False) -> int:
@@ -43,6 +44,14 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("inspect-manifest", help="Print benchmark upstream manifest")
 
+    p_models = sub.add_parser("inspect-model-plan", help="Print configured local model tiers without loading weights")
+    p_models.add_argument("--config", default="configs/experiment.json")
+
+    p_smoke = sub.add_parser("model-smoke", help="Load one configured local model and generate one toy test; this may use GPU")
+    p_smoke.add_argument("--config", default="configs/experiment.json")
+    p_smoke.add_argument("--model", default="qwen25coder15b")
+    p_smoke.add_argument("--seed", type=int, default=20260815)
+
     args = parser.parse_args(argv)
     if args.command == "doctor":
         return doctor(args.require_nvml)
@@ -53,5 +62,39 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "inspect-manifest":
         root = Path(__file__).resolve().parents[2]
         print((root / "data" / "upstreams.json").read_text(encoding="utf-8"))
+        return 0
+    if args.command == "inspect-model-plan":
+        cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
+        rows = {}
+        for key, model in cfg["models"].items():
+            rows[key] = {
+                "id": model["id"],
+                "role": model.get("role"),
+                "revision": model.get("revision"),
+                "quantization": model.get("quantization"),
+                "do_sample": model.get("do_sample"),
+                "temperature": model.get("temperature"),
+                "top_p": model.get("top_p"),
+            }
+        print(json.dumps(rows, indent=2))
+        return 0
+    if args.command == "model-smoke":
+        cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
+        if args.model not in cfg["models"]:
+            print(f"Unknown model key: {args.model}", file=sys.stderr)
+            return 2
+        backend = build_local_model_from_config(cfg["models"][args.model], allow_unpinned=True)
+        task = next(iter(ToyAdapter().tasks()))
+        candidate = backend.generate(task, seed=args.seed)
+        print(json.dumps({
+            "model_key": args.model,
+            "model_id": candidate.model_id,
+            "task_id": task.task_id,
+            "raw_confidence": candidate.raw_confidence,
+            "token_nll": candidate.token_nll,
+            "metadata": candidate.metadata,
+            "preview": candidate.text[:500],
+            "warning": "Exploratory smoke only. Pin resolved model/tokenizer revisions before confirmatory execution.",
+        }, indent=2))
         return 0
     return 1

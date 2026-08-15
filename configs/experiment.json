@@ -47,7 +47,8 @@
       "max_new_tokens": 1024,
       "temperature": 0.2,
       "top_p": 0.95,
-      "license": "Apache-2.0"
+      "license": "Apache-2.0",
+      "do_sample": true
     },
     "qwen25coder7b": {
       "id": "Qwen/Qwen2.5-Coder-7B-Instruct",
@@ -60,7 +61,8 @@
       "max_new_tokens": 1024,
       "temperature": 0.2,
       "top_p": 0.95,
-      "license": "Apache-2.0"
+      "license": "Apache-2.0",
+      "do_sample": true
     },
     "mistral7b": {
       "id": "mistralai/Mistral-7B-Instruct-v0.3",
@@ -73,7 +75,8 @@
       "max_new_tokens": 1024,
       "temperature": 0.2,
       "top_p": 0.95,
-      "license": "Apache-2.0"
+      "license": "Apache-2.0",
+      "do_sample": true
     }
   },
   "benchmarks": {
